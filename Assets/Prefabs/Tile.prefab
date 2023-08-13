@@ -32,7 +32,7 @@ Transform:
   m_Children:
   - {fileID: 2408492959838980847}
   m_Father: {fileID: 0}
-  m_RootOrder: 0
+  m_RootOrder: 5
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &4626923108524085825
 MonoBehaviour:
@@ -49,22 +49,12 @@ MonoBehaviour:
   dir: 0
   randomizeDir: 0
   lockY: 0
-  value: 0
   onValueChanged:
     m_PersistentCalls:
-      m_Calls:
-      - m_Target: {fileID: 8757042471073549639}
-        m_TargetAssemblyTypeName: TileVisuals, Assembly-CSharp
-        m_MethodName: SetVisuals
-        m_Mode: 1
-        m_Arguments:
-          m_ObjectArgument: {fileID: 0}
-          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
-          m_IntArgument: 0
-          m_FloatArgument: 0
-          m_StringArgument: 
-          m_BoolArgument: 0
-        m_CallState: 2
+      m_Calls: []
+  onStatusChanged:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!114 &8757042471073549639
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -78,10 +68,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   boardColorPalette: {fileID: 11400000, guid: 5f9fadd7935af484b87e9287f4fb6d92, type: 2}
+  visualContainer: {fileID: 7135448416997473222}
+  boardToken: {fileID: 2394015739153857638}
   label: {fileID: 7632671401264417556}
   gearCW: {fileID: 5262790952737514948}
   gearCCW: {fileID: 6577486115919827581}
-  visualContainer: {fileID: 7135448416997473222}
 --- !u!1 &4790832113166122132
 GameObject:
   m_ObjectHideFlags: 0
@@ -658,6 +649,11 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: dcd27400079b0084f8bc2b3c45db77dc, type: 3}
+--- !u!23 &2394015739153857638 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7511558181221131132, guid: dcd27400079b0084f8bc2b3c45db77dc, type: 3}
+  m_PrefabInstance: {fileID: 3961150071006240994}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &3563029543002982153 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: dcd27400079b0084f8bc2b3c45db77dc, type: 3}

@@ -4609,7 +4609,8 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls: []
   m_text: 'Interchained - Digital Paper Prototype // Left Click: tile++ // Right
-    Click: tile-- // Send screenshots of valid board states to @fearian!'
+    Click: tile-- // Enter: Mark as loop // Send screenshots of valid board states
+    to @fearian!'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -5367,10 +5368,6 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1100599398477565667, guid: 2bcaa2fa4de2b4744bb2046ad87375d0, type: 3}
       propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1382536852054755401, guid: 2bcaa2fa4de2b4744bb2046ad87375d0, type: 3}
-      propertyPath: dir
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4626923108524085825, guid: 2bcaa2fa4de2b4744bb2046ad87375d0, type: 3}

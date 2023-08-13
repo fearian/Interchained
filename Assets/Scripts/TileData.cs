@@ -11,21 +11,24 @@ public static class Constants
 
 public class TileData : Node
 {
-    [SerializeField][Range(0, Constants.MAX_CELL_VALUE)]
-    public int value = 0;//{ get; private set; } = 0;
+    public int value { get; private set; } = 0;
     private bool _isEmpty => value == 0;
-    private bool _isNumber => value is >= 1 and <= 7; 
-    private bool _isValid;
-    private bool _isOnLoop;
+    private bool _isNumber => value is >= 1 and <= 7;
+    public bool isValid { get; private set; } = true;
+    public bool isOnLoop { get; private set; } = false;
 
     public UnityEvent onValueChanged;
+    public UnityEvent onStatusChanged;
 
     public int SetValue(int newValue)
     {
         if (newValue < 0 || newValue > Constants.MAX_CELL_VALUE)
         {
+            //bool wasNumber = _isNumber;
             Debug.Log($"VALUE: '{value}' is invalid, Set 0 instead");
             newValue = 0;
+            //if (_isNumber != wasNumber) onStatusChanged.Invoke();
+            //if (_isNumber) isOnLoop = false;
         }
         value = newValue;
 
@@ -37,6 +40,14 @@ public class TileData : Node
     public override string ToString()
     {
         return value.ToString();
+    }
+
+    public void ToggleIsLoop()
+    {
+        if (!_isNumber) return;
+        isOnLoop = !isOnLoop;
+
+        onStatusChanged.Invoke();
     }
 }
 

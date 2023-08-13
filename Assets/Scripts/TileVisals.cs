@@ -10,16 +10,26 @@ public class TileVisuals : MonoBehaviour
     private TileData tileData;
 
     [SerializeField] public BoardColors boardColorPalette;
+    [SerializeField] private GameObject visualContainer;
+    [SerializeField] private MeshRenderer boardToken;
     [SerializeField] private TextMeshPro label;
     [SerializeField] private Transform gearCW;
     [SerializeField] private Transform gearCCW;
-    [SerializeField] private GameObject visualContainer;
     private void Awake()
     {
         tileData = GetComponent<TileData>();
         tileData.onValueChanged.AddListener(SetVisuals);
+        tileData.onStatusChanged.AddListener(SetLoopStatus);
 
         SetVisuals();
+        SetLoopStatus();
+    }
+
+    private void SetLoopStatus()
+    {
+        if (!tileData.isValid) boardToken.material.color = boardColorPalette.invalidTile;
+        if (tileData.isOnLoop) boardToken.material.color = boardColorPalette.loopTile;
+        else boardToken.material.color = boardColorPalette.validTile;
     }
 
     public void SetVisuals()

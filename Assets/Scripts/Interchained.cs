@@ -25,6 +25,7 @@ public class Interchained : MonoBehaviour
         //DebugUtils.DrawDebugHex(new Vector3(mousePos.x, 0, mousePos.z), 0.3f);
         if (Input.GetMouseButtonDown(0)) CycleValues(true);
         if (Input.GetMouseButtonDown(1)) CycleValues(false);
+        if (Input.GetKeyDown(KeyCode.Return)||Input.GetKeyDown(KeyCode.KeypadEnter)) MarkAsLoop();
     }
 
     private void CycleValues(bool cycleUp = true)
@@ -36,6 +37,15 @@ public class Interchained : MonoBehaviour
         if (cycleUp) tile.SetValue(tile.value + 1);
         else tile.SetValue(tile.value - 1);
         Debug.Log($"Tile {hex.q},{hex.r} value {tile.value}");
+    }
+    
+    private void MarkAsLoop(){
+        Hex hex = Hex.FromWorld(mousePos); 
+        DebugUtils.DrawDebugHex(hex.ToWorld(), 0.1f);
+        TileData tile = hexGrid.GetTile(hex);
+        if (tile == null) return;
+        Debug.Log($"Enter Key Down @{hex.q},{hex.r}. Loop: {tile.isOnLoop}");
+        tile.ToggleIsLoop();
     }
 
     private Vector3 GetMouseWorldPosition()

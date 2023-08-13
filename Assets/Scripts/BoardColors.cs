@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 [CreateAssetMenu(fileName = "Board Color Palette", menuName = "Interchained/Board Colors", order = 1)]
 public class BoardColors : ScriptableObject
@@ -17,5 +19,26 @@ public class BoardColors : ScriptableObject
     public Color regionEast = Color.gray;
     public Color regionSouth = Color.gray;
     public Color regionWest = Color.gray;
-    [Space] public Color invalidTile = Color.red;
+    [Space]
+    public Color validTile = Color.grey;
+    public Color invalidTile = Color.red;
+    public Color loopTile = Color.blue;
+    public Color loopComplete = Color.green;
+
+    [Header("Material Instances")]
+    public Material tokenMat;
+    public Material invalidTokenMat;
+    public Material loopTokenMat;
+    public Material loopCompleteTokenMat;
+
+    private void Awake()
+    {
+        tokenMat.color = validTile;
+        invalidTokenMat = new Material(tokenMat);
+        invalidTokenMat.color = invalidTile;
+        loopTokenMat = new Material(tokenMat);
+        loopTokenMat.color = loopTile;
+        loopCompleteTokenMat = new Material(tokenMat);
+        loopCompleteTokenMat.color = loopComplete;
+    }
 }
