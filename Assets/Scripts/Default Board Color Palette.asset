@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ed7a627acb946b749b0c978ff6a4c6c4, type: 3}
+  m_Name: Default Board Color Palette
+  m_EditorClassIdentifier: 
+  pair12: {r: 0.40516382, g: 0.8666667, b: 0.027450979, a: 1}
+  pair34: {r: 0.003921571, g: 0.66960853, b: 0.8980392, a: 1}
+  pair56: {r: 1, g: 0.11792451, b: 0.23297802, a: 1}
+  tile7: {r: 1, g: 0.69459856, b: 0.015686274, a: 1}
+  gears: {r: 1, g: 1, b: 1, a: 1}
+  regionNorth: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  regionEast: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  regionSouth: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  regionWest: {r: 0.5, g: 0.5, b: 0.5, a: 1}
+  invalidTile: {r: 1, g: 0, b: 0, a: 1}
