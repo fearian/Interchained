@@ -19,6 +19,11 @@ public class HexGrid
     
     private TextMeshPro[,] debugTextArray;
 
+    public TileData[,] GetGridArray()
+    {
+        return gridArray;
+    }
+
     public HexGrid(int GridRadius, TileData tileObject)
     {
         this.GridRadius = GridRadius;

@@ -10,6 +10,8 @@ public class Interchained : MonoBehaviour
     [SerializeField]
     private TileData tileObject;
     [SerializeField] public BoardColors boardColorPalette;
+    [SerializeField]
+    private SaveLoad saveLoadHandler;
 
     private HexGrid hexGrid;
 
@@ -52,5 +54,25 @@ public class Interchained : MonoBehaviour
     {
         Vector3 worldPosition = Camera.main.ScreenToWorldPoint(Input.mousePosition);
         return worldPosition;
+    }
+
+    public void SaveBoardState()
+    {
+        saveLoadHandler.SaveGame(hexGrid);
+    }
+
+    public void LoadBoardState()
+    {
+        Debug.LogWarning("not implemented loading yet!");
+    }
+
+    public void CopyClipboard()
+    {
+        saveLoadHandler.CopyToClipboard(hexGrid);
+    }
+
+    public void LoadClipboard()
+    {
+        saveLoadHandler.PasteFromClipboard();
     }
 }
