@@ -136,10 +136,9 @@ public class HexGrid
             {
                 if (gridArray[x, y] != null)
                 {
-                    // cant read boardValues because it's null
-                    // it is null, because 2d arrays are not serialised
-                    gridArray[y, x].SetValue(boardState[y, x]);
-                    //if (boardState.boardLoop[y, x] == true) gridArray[y, x].ToggleIsLoop();
+                    // See Bit Cheat Sheet in SaveLoad.cs
+                    gridArray[x, y].SetValue(boardState[y, x] & 0b111111);
+                    if (((boardState[y, x] >> 6) & 0b1) == 1) gridArray[x, y].ToggleIsLoop(true);
                 }
             }
         }

@@ -14,8 +14,10 @@ public class TileData : Node
     public int value { get; private set; } = 0;
     private bool _isEmpty => value == 0;
     private bool _isNumber => value is >= 1 and <= 7;
-    public bool isValid { get; private set; } = true;
+    public bool isInvalid { get; private set; } = false;
     public bool isOnLoop { get; private set; } = false;
+    public bool isLocked { get; private set; } = false;
+    public bool isHidden { get; private set; } = false;
 
     public UnityEvent onValueChanged;
     public UnityEvent onStatusChanged;
@@ -46,6 +48,13 @@ public class TileData : Node
     {
         if (!_isNumber) return;
         isOnLoop = !isOnLoop;
+
+        onStatusChanged.Invoke();
+    }
+    public void ToggleIsLoop(bool isLoop)
+    {
+        if (!_isNumber) return;
+        isOnLoop = isLoop;
 
         onStatusChanged.Invoke();
     }

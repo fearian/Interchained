@@ -1,7 +1,10 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.Serialization;
 
 public class Interchained : MonoBehaviour
 {
@@ -12,6 +15,11 @@ public class Interchained : MonoBehaviour
     [SerializeField] public BoardColors boardColorPalette;
     [SerializeField]
     private SaveLoad saveLoadHandler;
+    
+    [SerializeField] private TextMeshProUGUI puzzleInfoField;
+
+    public UnityEvent onLevelSaved;
+    public UnityEvent onLevelLoaded;
 
     private HexGrid hexGrid;
 
@@ -59,6 +67,8 @@ public class Interchained : MonoBehaviour
     public void SaveBoardState()
     {
         saveLoadHandler.SaveGame(hexGrid);
+        
+        onLevelSaved.Invoke();
     }
 
     public void LoadBoardState(string name = "")
@@ -72,6 +82,9 @@ public class Interchained : MonoBehaviour
         }
         hexGrid.ClearBoard();
         hexGrid.SetBoard(boardState);
+        puzzleInfoField.text = "<b>" + boardState.Name + "</b>" + "\n" + boardState.Description;
+        
+        onLevelLoaded.Invoke();
     }
 
     public void CopyClipboard()
@@ -81,6 +94,15 @@ public class Interchained : MonoBehaviour
 
     public void LoadClipboard()
     {
-        saveLoadHandler.PasteFromClipboard();
+        BoardData1D<int> boardState =saveLoadHandler.PasteFromClipboard();
+        if (boardState == null)
+        {
+            Debug.Log("BAD BOARD STATE ABOORT");
+            return;
+        }
+        hexGrid.ClearBoard();
+        hexGrid.SetBoard(boardState);
+        
+        onLevelLoaded.Invoke();
     }
 }
