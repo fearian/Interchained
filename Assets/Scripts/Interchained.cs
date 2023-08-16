@@ -64,7 +64,7 @@ public class Interchained : MonoBehaviour
     public void LoadBoardState(string name = "")
     {
         Debug.Log($"Loading {name}");
-        BoardData boardState = saveLoadHandler.LoadLevel(name);
+        BoardData1D<int> boardState = saveLoadHandler.LoadLevel(name);
         if (boardState == null)
         {
             Debug.Log("BAD BOARD STATE ABOORT");

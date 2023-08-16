@@ -13,36 +13,59 @@ public class SaveLoad : MonoBehaviour
 {
     [SerializeField] private TMP_InputField puzzleNameInput;
     [SerializeField] private Levels levelsList;
-    private BoardData _boardData;
+    private BoardData1D<int> _boardData;
     
-    public BoardData SaveGame(HexGrid hexGrid)
+    public BoardData1D<int> SaveGame(HexGrid hexGrid)
     {
-        string name = puzzleNameInput.text;
-        _boardData = new BoardData(hexGrid.GetGridArray(), name);
+        _boardData = ToBoardData1D(hexGrid);
         levelsList.AddLevel(_boardData);
         return _boardData;
     }
 
-    public BoardData LoadLevel(string name)
+    public BoardData1D<int> ToBoardData1D(HexGrid hexGrid)
+    {
+        int l = hexGrid.GetGridArray().GetLength(0);
+        Debug.Log($"Loader: Getting hexGrid array length of {l}");
+        _boardData = new BoardData1D<int>(l, l, puzzleNameInput.text);
+        TileData[,] tileData = hexGrid.GetGridArray();
+        Debug.Log($"Loader: Attempting to load tileData[{tileData.GetLength(0)},{tileData.GetLength(1)}] " +
+                  $"into _boardData[{_boardData.Get_X_Length},{_boardData.Get_Y_Length}]");
+        for (int x = 0; x < l; x++)
+        {
+            for (int y = 0; y < l; y++)
+            {
+                if (tileData[y, x] == null)
+                {
+                    _boardData[x, y] = 0;
+                }
+                else
+                {
+                    _boardData[x, y] = tileData[y, x].value;
+                }
+            }
+        }
+
+        return _boardData;
+    }
+
+    public BoardData1D<int> LoadLevel(string name)
     {
         if (name == "") return null;
         _boardData = levelsList.GetLevel(name);
-        Debug.Log($"print this linear array value {_boardData.linearBoardValues[2,3]}");
+        Debug.Log($"print this linear array value {_boardData[2,3]}");
         return _boardData;
     }
 
     public void CopyToClipboard(HexGrid hexGrid)
     {
-        string json = FormatData(hexGrid);
+        _boardData = ToBoardData1D(hexGrid);
+        string json = FormatJson(_boardData);
         GUIUtility.systemCopyBuffer = FormatForClipboard(json);
     }
 
-    private string FormatData(HexGrid hexGrid)
+    private string FormatJson(BoardData1D<int> boardData)
     {
-        string name = puzzleNameInput.text;
-        _boardData = new BoardData(hexGrid.GetGridArray(), name);
-
-        string json = JsonUtility.ToJson(_boardData, true);
+        string json = JsonUtility.ToJson(boardData, true);
         Debug.Log(json);
         
         return json;
@@ -67,6 +90,7 @@ public class SaveLoad : MonoBehaviour
         LoadGame(json);
     }
     
+    /*
     public void ArrayTest()
     {
         int n = 3, m = 3;
@@ -99,10 +123,10 @@ public class SaveLoad : MonoBehaviour
         }
         Debug.Log(result);
         // This code is contributed by nitin mittal
-    }
+    }*/
 }
 
-
+/*
 [Serializable]
 public class BoardData
 {
@@ -169,23 +193,53 @@ public class BoardData
 }
 
 [Serializable]
-public class Linear2DArray<T> where T : struct { public int x, y; public T[] SingleArray;
+public class Linear2DArray<T> where T : struct { public int x, y; public T[] LinearArray;
 
     public T this[int x, int y]
     {
-        get => SingleArray[y * this.x + x];
-        set => SingleArray[y * this.x + x] = value;
+        get => LinearArray[y * this.x + x];
+        set => LinearArray[y * this.x + x] = value;
     }
 
     public Linear2DArray(int x, int y)
     {
         this.x = x;
         this.y = y;
-        SingleArray = new T[x * y];
+        LinearArray = new T[x * y];
     }
 
     public int Get_X_Length => x;
     public int Get_Y_Length => y;
-    public int Length => SingleArray.Length;
+    public int Length => LinearArray.Length;
+}
+*/
+[Serializable]
+public class BoardData1D<T> where T : struct
+{
+    public int x, y;
+    public T[] LinearArray;
+    public int BoardSize => (LinearArray.Length - 1) / 2;
+    public string Name;
+    public string Description;
+    
+    // 2D to 1D Array
+    public T this[int x, int y]
+    {
+        get => LinearArray[y * this.x + x];
+        set => LinearArray[y * this.x + x] = value;
+    }
+
+    public BoardData1D(int x, int y, string puzzleName = "Unnamed Puzzle", string puzzleDescription = "")
+    {
+        this.x = x;
+        this.y = y;
+        LinearArray = new T[x * y];
+        Name = puzzleName;
+        Description = puzzleDescription;
+    }
+
+    public int Get_X_Length => x;
+    public int Get_Y_Length => y;
+    public int Length => LinearArray.Length;
 }
 

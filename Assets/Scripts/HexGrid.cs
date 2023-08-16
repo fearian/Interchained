@@ -88,7 +88,7 @@ public class HexGrid
         y = hex.q + GridRadius;
         if (!ValidHexes.Contains(hex))
         {
-            Debug.LogWarning($"ToArray: invalid board hex {hex}, array element null!");
+            //Debug.LogWarning($"ToArray: invalid board hex {hex}, array element null!");
         }
     }
 
@@ -128,7 +128,7 @@ public class HexGrid
         }
     }
 
-    public void SetBoard(BoardData boardState)
+    public void SetBoard(BoardData1D<int> boardState)
     {
         for (int x = 0; x < gridArray.GetLength(0); x++)
         {
@@ -138,8 +138,8 @@ public class HexGrid
                 {
                     // cant read boardValues because it's null
                     // it is null, because 2d arrays are not serialised
-                    gridArray[y, x].SetValue(boardState.boardValues[y, x]);
-                    if (boardState.boardLoop[y, x] == true) gridArray[y, x].ToggleIsLoop();
+                    gridArray[y, x].SetValue(boardState[y, x]);
+                    //if (boardState.boardLoop[y, x] == true) gridArray[y, x].ToggleIsLoop();
                 }
             }
         }

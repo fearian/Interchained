@@ -6,16 +6,14 @@ using UnityEngine;
 [CreateAssetMenu(fileName = "Level List", menuName = "Interchained/Levels List", order = 1)]
 public class Levels : ScriptableObject
 {
-    public List<BoardData> savedLevels;
-    public List<String> listOfLevels;
+    public List<BoardData1D<int>> savedLevels;
 
-    public void AddLevel(BoardData level)
+    public void AddLevel(BoardData1D<int> level)
     {
         savedLevels.Add(level);
-        listOfLevels.Add(level.Name);
     }
 
-    public BoardData GetLevel(string name)
+    public BoardData1D<int> GetLevel(string name)
     {
         foreach (var level in savedLevels)
         {
