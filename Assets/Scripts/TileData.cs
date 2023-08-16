@@ -49,5 +49,13 @@ public class TileData : Node
 
         onStatusChanged.Invoke();
     }
+
+    public void ClearTile()
+    {
+        value = 0;
+        onValueChanged.Invoke();
+        isOnLoop = false;
+        onStatusChanged.Invoke();
+    }
 }
 

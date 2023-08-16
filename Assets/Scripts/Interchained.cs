@@ -61,9 +61,17 @@ public class Interchained : MonoBehaviour
         saveLoadHandler.SaveGame(hexGrid);
     }
 
-    public void LoadBoardState()
+    public void LoadBoardState(string name = "")
     {
-        Debug.LogWarning("not implemented loading yet!");
+        Debug.Log($"Loading {name}");
+        BoardData boardState = saveLoadHandler.LoadLevel(name);
+        if (boardState == null)
+        {
+            Debug.Log("BAD BOARD STATE ABOORT");
+            return;
+        }
+        hexGrid.ClearBoard();
+        hexGrid.SetBoard(boardState);
     }
 
     public void CopyClipboard()

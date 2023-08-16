@@ -1,0 +1,49 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cedad4f39f8c32e4ba1b06c4146467fa, type: 3}
+  m_Name: Level List
+  m_EditorClassIdentifier: 
+  savedLevels:
+  - boardSize: 3
+    boardState: "\n\t[n, n, n, 1, 0, 0, 1]\n\t[n, n, 0, 2, 0, 2, 0]\n\t[n, 0, 3,
+      0, 0, 3, 0]\n\t[0, 0, 4, n, 4, 0, 0]\n\t[6, 5, 0, 0, 5, 6, n]\n\t[0, 0, 1,
+      0, 0, n, n]\n\t[0, 0, 0, 0, n, n, n]\n\t"
+    Name: Level 01
+    Description: 
+    linearBoardValues:
+      x: 0
+      y: 0
+      SingleArray: 
+  - boardSize: 3
+    boardState: "\n\t[n, n, n, 0, 0, 0, 0]\n\t[n, n, 0, 0, 0, 0, 0]\n\t[n, 0, 0,
+      0, 0, 0, 0]\n\t[0, 0, 0, n, 0, 0, 0]\n\t[0, 0, 0, 0, 0, 0, n]\n\t[0, 0, 0,
+      0, 0, n, n]\n\t[0, 0, 0, 0, n, n, n]\n\t"
+    Name: Empty Board
+    Description: 
+    linearBoardValues:
+      x: 0
+      y: 0
+      SingleArray: 
+  - boardSize: 3
+    boardState: "\n\t[n, n, n, 0, 0, 0, 0]\n\t[n, n, 0, 0, 0, 0, 0]\n\t[n, 0, 1,
+      1, 1, 1, 0]\n\t[0, 1, 0, n, 0, 2, 0]\n\t[0, 1, 0, 0, 0, 1, n]\n\t[0, 1, 1,
+      1, 1, n, n]\n\t[0, 0, 0, 0, n, n, n]\n\t"
+    Name: linear
+    Description: 
+    linearBoardValues:
+      x: 7
+      y: 7
+      SingleArray: 00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000100000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+  listOfLevels:
+  - Level 01
+  - Empty Board
+  - linear

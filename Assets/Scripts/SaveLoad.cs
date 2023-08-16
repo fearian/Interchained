@@ -12,13 +12,23 @@ using UnityEngine.Serialization;
 public class SaveLoad : MonoBehaviour
 {
     [SerializeField] private TMP_InputField puzzleNameInput;
-    private HexGrid _hexGrid;
+    [SerializeField] private Levels levelsList;
     private BoardData _boardData;
-
-    public void SaveGame(HexGrid hexGrid)
+    
+    public BoardData SaveGame(HexGrid hexGrid)
     {
-        string json = FormatData(hexGrid);
-        GUIUtility.systemCopyBuffer = FormatForClipboard(json);
+        string name = puzzleNameInput.text;
+        _boardData = new BoardData(hexGrid.GetGridArray(), name);
+        levelsList.AddLevel(_boardData);
+        return _boardData;
+    }
+
+    public BoardData LoadLevel(string name)
+    {
+        if (name == "") return null;
+        _boardData = levelsList.GetLevel(name);
+        Debug.Log($"print this linear array value {_boardData.linearBoardValues[2,3]}");
+        return _boardData;
     }
 
     public void CopyToClipboard(HexGrid hexGrid)
@@ -29,16 +39,15 @@ public class SaveLoad : MonoBehaviour
 
     private string FormatData(HexGrid hexGrid)
     {
-        _hexGrid = hexGrid;
         string name = puzzleNameInput.text;
-        _boardData = new BoardData(_hexGrid.GetGridArray(), name);
+        _boardData = new BoardData(hexGrid.GetGridArray(), name);
 
         string json = JsonUtility.ToJson(_boardData, true);
         Debug.Log(json);
         
         return json;
     }
-    
+
     private string FormatForClipboard(string input)
     {
         // Replace \n with actual newline characters and \t with tabs
@@ -48,8 +57,8 @@ public class SaveLoad : MonoBehaviour
 
     public void LoadGame(string json)
     {
-        _boardData = JsonUtility.FromJson<BoardData>(json);
-        Debug.Log($"loading {_boardData.Name}...");
+        
+        Debug.LogWarning("Not Implemented Loading");
     }
 
     public void PasteFromClipboard()
@@ -57,7 +66,7 @@ public class SaveLoad : MonoBehaviour
         string json = GUIUtility.systemCopyBuffer;
         LoadGame(json);
     }
-
+    
     public void ArrayTest()
     {
         int n = 3, m = 3;
@@ -95,12 +104,22 @@ public class SaveLoad : MonoBehaviour
 
 
 [Serializable]
-public struct BoardData
+public class BoardData
 {
     public int boardSize;
     public string boardState;
     public string Name;
     public string Description;
+
+    public int[,] boardValues;
+    public bool[,] boardLoop;
+
+    public Linear2DArray<int> linearBoardValues;
+    //public bool[,] locked;
+    // hey maybe these should all be (short)bits.
+    // 101010 cell value
+    // 1010 loop/locked/valid/null
+    // 6 bits to play with
 
     public BoardData(TileData[,] tileData, string puzzleName = "Unnamed Puzzle", string puzzleDescription = "")
     {
@@ -109,6 +128,8 @@ public struct BoardData
         boardSize = (tileData.GetLength(0) - 1) / 2;
 
         int arraySize = tileData.GetLength(0);
+        boardValues = new int[arraySize, arraySize];
+        linearBoardValues = new Linear2DArray<int>(arraySize, arraySize);
 
         boardState = "\n";
         for (int x = 0; x < arraySize; x++)
@@ -121,12 +142,14 @@ public struct BoardData
                 if (tileData[x, y] == null)
                 {
                     row[y] = "n";
+                    boardValues[x, y] = 0;
                 }
                 else
                 {
                     string v = tileData[x, y].value.ToString();
                     string l = tileData[x, y].isOnLoop ? "l" : "";
                     row[y] = v + l;
+                    boardValues[x, y] = tileData[x, y].value;
                 }
             }
 
@@ -140,5 +163,29 @@ public struct BoardData
 
         boardState += "\t";
         //Debug.Log(boardState);
+
+        linearBoardValues[2, 3] = boardValues[2, 3];
     }
 }
+
+[Serializable]
+public class Linear2DArray<T> where T : struct { public int x, y; public T[] SingleArray;
+
+    public T this[int x, int y]
+    {
+        get => SingleArray[y * this.x + x];
+        set => SingleArray[y * this.x + x] = value;
+    }
+
+    public Linear2DArray(int x, int y)
+    {
+        this.x = x;
+        this.y = y;
+        SingleArray = new T[x * y];
+    }
+
+    public int Get_X_Length => x;
+    public int Get_Y_Length => y;
+    public int Length => SingleArray.Length;
+}
+

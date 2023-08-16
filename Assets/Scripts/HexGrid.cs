@@ -114,7 +114,36 @@ public class HexGrid
         }
     }
 
-    
+    public void ClearBoard()
+    {
+        for (int x = 0; x < gridArray.GetLength(0); x++)
+        {
+            for (int y = 0; y < gridArray.GetLength(1); y++)
+            {
+                if (gridArray[x, y] != null)
+                {
+                    gridArray[y, x].ClearTile();
+                }
+            }
+        }
+    }
+
+    public void SetBoard(BoardData boardState)
+    {
+        for (int x = 0; x < gridArray.GetLength(0); x++)
+        {
+            for (int y = 0; y < gridArray.GetLength(1); y++)
+            {
+                if (gridArray[x, y] != null)
+                {
+                    // cant read boardValues because it's null
+                    // it is null, because 2d arrays are not serialised
+                    gridArray[y, x].SetValue(boardState.boardValues[y, x]);
+                    if (boardState.boardLoop[y, x] == true) gridArray[y, x].ToggleIsLoop();
+                }
+            }
+        }
+    }
 }
 
 public static class DebugUtils
