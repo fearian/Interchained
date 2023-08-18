@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using static DebugUtils;
 using Color = UnityEngine.Color;
@@ -11,44 +12,46 @@ using Vector3 = UnityEngine.Vector3;
 
 public class HexGrid
 {
-    [SerializeField][Range(2, 7)] private int GridRadius = 3;
-    private TileData[,] gridArray;
-    [SerializeField] private TileData tileObject;
-    private List<Hex> ValidHexes;
+    //[SerializeField][Range(2, 7)]
+    public int GridRadius { get; private set; } = 3;
+    public int GridDiameter => GridRadius * 2 + 1;
+    private TileData[,] _gridArray;
+    [SerializeField] private TileData _tileObject;
+    public List<Hex> ValidHexes { get; private set; }
     
     
-    private TextMeshPro[,] debugTextArray;
+    private TextMeshPro[,] _debugTextArray;
 
     public TileData[,] GetGridArray()
     {
-        return gridArray;
+        return _gridArray;
     }
 
-    public HexGrid(int GridRadius, TileData tileObject)
+    public HexGrid(int gridRadius, TileData tileObject)
     {
-        this.GridRadius = GridRadius;
-        this.tileObject = tileObject;
-        this.ValidHexes = new List<Hex>(Hex.Spiral(Hex.zero, 1, GridRadius));
+        this.GridRadius = gridRadius;
+        this._tileObject = tileObject;
+        this.ValidHexes = new List<Hex>(Hex.Spiral(Hex.zero, 1, gridRadius));
 
-        int arraySize = GridRadius * 2 + 1;
-        gridArray = new TileData[arraySize, arraySize];
-        debugTextArray = new TextMeshPro[arraySize, arraySize];
+        int arraySize = gridRadius * 2 + 1;
+        _gridArray = new TileData[arraySize, arraySize];
+        _debugTextArray = new TextMeshPro[arraySize, arraySize];
 
         
-        for (int x = 0; x < gridArray.GetLength(0); x++)
+        for (int x = 0; x < _gridArray.GetLength(0); x++)
         {
-            for (int y = 0; y < gridArray.GetLength(1); y++)
+            for (int y = 0; y < _gridArray.GetLength(1); y++)
             {
                 
-                Hex hex = new Hex(y - GridRadius, x - GridRadius);
+                Hex hex = new Hex(y - gridRadius, x - gridRadius);
                 if (ValidHexes.Contains(hex))
                 {
-                    gridArray[x, y] = CreateTile(y - GridRadius, x - GridRadius);
+                    _gridArray[x, y] = CreateTile(y - gridRadius, x - gridRadius);
                 }
                 else
                 {
-                    DrawDebugHex(hex.ToWorld());
-                    gridArray[x, y] = null;
+                    //DrawDebugHex(hex.ToWorld());
+                    _gridArray[x, y] = null;
                 }
             }
         }
@@ -61,7 +64,7 @@ public class HexGrid
         Hex hex = new Hex(q, r);
         Vector3 pos = hex.ToWorld();
         
-        TileData tile = GameObject.Instantiate<TileData>(tileObject, pos, Quaternion.Euler(0,0,0), null);
+        TileData tile = GameObject.Instantiate<TileData>(_tileObject, pos, Quaternion.Euler(0,0,0), null);
 
         return tile;
     }
@@ -70,7 +73,7 @@ public class HexGrid
     {
         int x, y;
         ToArray(hex, out x, out y);
-        if (InGridArray(x,y)) return gridArray[x, y];
+        if (InGridArray(x,y)) return _gridArray[x, y];
         else return null;
     }
 
@@ -78,8 +81,8 @@ public class HexGrid
     {
         return x >= 0 
             && y >= 0 
-            && x < gridArray.GetLength(0) 
-            && y < gridArray.GetLength(1);
+            && x < _gridArray.GetLength(0) 
+            && y < _gridArray.GetLength(1);
     }
     
     public void ToArray(Hex hex, out int x, out int y)
@@ -99,15 +102,15 @@ public class HexGrid
 
     public void DrawDebugCoords()
     {
-        for (int x = 0; x < gridArray.GetLength(0); x++)
+        for (int x = 0; x < _gridArray.GetLength(0); x++)
         {
-            for (int y = 0; y < gridArray.GetLength(1); y++)
+            for (int y = 0; y < _gridArray.GetLength(1); y++)
             {
-                if (gridArray[x, y] != null)
+                if (_gridArray[x, y] != null)
                 {
-                    TileData tile = gridArray[x, y];
+                    TileData tile = _gridArray[x, y];
                     Vector3 pos = tile.hex.ToWorld();
-                    debugTextArray[x,y] = CreateWorldText($"{tile.hex.q},{tile.hex.r}", null, pos + new Vector3(0,0.5f, 0), 3);
+                    _debugTextArray[x,y] = CreateWorldText($"{tile.hex.q},{tile.hex.r}", null, pos + new Vector3(0,0.5f, 0), 3);
                     DrawDebugHex(pos);
                 }
             }
@@ -116,13 +119,13 @@ public class HexGrid
 
     public void ClearBoard()
     {
-        for (int x = 0; x < gridArray.GetLength(0); x++)
+        for (int x = 0; x < _gridArray.GetLength(0); x++)
         {
-            for (int y = 0; y < gridArray.GetLength(1); y++)
+            for (int y = 0; y < _gridArray.GetLength(1); y++)
             {
-                if (gridArray[x, y] != null)
+                if (_gridArray[x, y] != null)
                 {
-                    gridArray[y, x].ClearTile();
+                    _gridArray[y, x].ClearTile();
                 }
             }
         }
@@ -130,15 +133,15 @@ public class HexGrid
 
     public void SetBoard(BoardData1D<int> boardState)
     {
-        for (int x = 0; x < gridArray.GetLength(0); x++)
+        for (int x = 0; x < _gridArray.GetLength(0); x++)
         {
-            for (int y = 0; y < gridArray.GetLength(1); y++)
+            for (int y = 0; y < _gridArray.GetLength(1); y++)
             {
-                if (gridArray[x, y] != null)
+                if (_gridArray[x, y] != null)
                 {
                     // See Bit Cheat Sheet in SaveLoad.cs
-                    gridArray[x, y].SetValue(boardState[y, x] & 0b111111);
-                    if (((boardState[y, x] >> 6) & 0b1) == 1) gridArray[x, y].ToggleIsLoop(true);
+                    _gridArray[x, y].SetValue(boardState[y, x] & 0b111111);
+                    if (((boardState[y, x] >> 6) & 0b1) == 1) _gridArray[x, y].ToggleIsLoop(true);
                 }
             }
         }

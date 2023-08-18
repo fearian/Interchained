@@ -21,9 +21,9 @@ MonoBehaviour:
   regionEast: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   regionSouth: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   regionWest: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  validTile: {r: 0.07771893, g: 0.051085785, b: 0.26415092, a: 0.8352941}
+  validTile: {r: 0.05882353, g: 0.039215688, b: 0.36862746, a: 0.6039216}
   invalidTile: {r: 0.6313726, g: 0.09803922, b: 0, a: 0.6745098}
-  loopTile: {r: 0.0999032, g: 0.5566038, b: 0, a: 0.8862745}
+  loopTile: {r: 0.3254982, g: 0.8773585, b: 0.21106264, a: 0.83137256}
   loopComplete: {r: 0.24719654, g: 0.9528302, b: 0.43594474, a: 0.77254903}
   tokenMat: {fileID: 2100000, guid: 7ca6a171912f9824db55005aa0c59651, type: 2}
   invalidTokenMat: {fileID: 0}

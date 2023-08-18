@@ -15,6 +15,8 @@ public class Interchained : MonoBehaviour
     [SerializeField] public BoardColors boardColorPalette;
     [SerializeField]
     private SaveLoad saveLoadHandler;
+
+    private Validator _validator;
     
     [SerializeField] private TextMeshProUGUI puzzleInfoField;
 
@@ -27,6 +29,7 @@ public class Interchained : MonoBehaviour
     void Start()
     {
         hexGrid = new HexGrid(size, tileObject);
+        _validator = new Validator(hexGrid);
     }
 
     private void Update()
@@ -44,9 +47,13 @@ public class Interchained : MonoBehaviour
         DebugUtils.DrawDebugHex(hex.ToWorld(), 0.1f);
         TileData tile = hexGrid.GetTile(hex);
         if (tile == null) return;
-        if (cycleUp) tile.SetValue(tile.value + 1);
-        else tile.SetValue(tile.value - 1);
-        Debug.Log($"Tile {hex.q},{hex.r} value {tile.value}");
+        if (cycleUp) tile.SetValue(tile.Value + 1);
+        else tile.SetValue(tile.Value - 1);
+        foreach (var cell in _validator.IsDuplicatedAlongAxis(hex))
+        {
+            DebugUtils.DrawDebugHex(cell.ToWorld());
+        }
+        //Debug.Log($"Tile {hex.q},{hex.r} value {tile.Value}");
     }
     
     private void MarkAsLoop(){
@@ -54,7 +61,7 @@ public class Interchained : MonoBehaviour
         DebugUtils.DrawDebugHex(hex.ToWorld(), 0.1f);
         TileData tile = hexGrid.GetTile(hex);
         if (tile == null) return;
-        Debug.Log($"Enter Key Down @{hex.q},{hex.r}. Loop: {tile.isOnLoop}");
+        Debug.Log($"Enter Key Down @{hex.q},{hex.r}. Loop: {tile.IsOnLoop}");
         tile.ToggleIsLoop();
     }
 

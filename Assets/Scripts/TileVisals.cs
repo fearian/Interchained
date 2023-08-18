@@ -27,30 +27,30 @@ public class TileVisuals : MonoBehaviour
 
     private void SetLoopStatus()
     {
-        if (tileData.isInvalid) boardToken.material.color = boardColorPalette.invalidTile;
-        if (tileData.isOnLoop) boardToken.material.color = boardColorPalette.loopTile;
+        if (tileData.IsInvalid) boardToken.material.color = boardColorPalette.invalidTile;
+        if (tileData.IsOnLoop) boardToken.material.color = boardColorPalette.loopTile;
         else boardToken.material.color = boardColorPalette.validTile;
     }
 
     public void SetVisuals()
     {
-        if (tileData.value == 0)
+        if (tileData.Value == 0)
         {
             visualContainer.SetActive(false);
             return;
         }
-        else if (tileData.value >= 1 && tileData.value <= 7)
+        else if (tileData.Value >= 1 && tileData.Value <= 7)
         {
             visualContainer.SetActive(true);
             gearCW.gameObject.SetActive(false);
             gearCCW.gameObject.SetActive(false);
             label.gameObject.SetActive(true);
 
-            label.color = SetColor(tileData.value);
-            label.text = tileData.value.ToString();
+            label.color = SetColor(tileData.Value);
+            label.text = tileData.Value.ToString();
             return;
         }
-        else if (tileData.value == 8)
+        else if (tileData.Value == 8)
         {
             visualContainer.SetActive(true);
             gearCW.gameObject.SetActive(true);
@@ -59,7 +59,7 @@ public class TileVisuals : MonoBehaviour
 
             return;
         }
-        else if (tileData.value == 9)
+        else if (tileData.Value == 9)
         {
             visualContainer.SetActive(true);
             gearCW.gameObject.SetActive(false);

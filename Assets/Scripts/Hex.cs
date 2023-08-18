@@ -125,6 +125,17 @@ public struct Hex {
         }
     }
 
+    public IEnumerable<Hex> AlongAxis(int distance)
+    {
+        foreach (Hex dir in AXIAL_DIRECTIONS) {
+            Hex h = this;
+            for (int i = 0; i < distance; i++)
+            {
+                yield return h += dir;
+            }
+        }
+    }
+
     public Hex GetNeighbour(int dir) {
         Hex incr = AXIAL_DIRECTIONS[dir % AXIAL_DIRECTIONS.Length];
         return this + incr;

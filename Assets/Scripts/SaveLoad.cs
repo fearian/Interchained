@@ -38,11 +38,11 @@ public class SaveLoad : MonoBehaviour
                 }
                 else
                 {
-                    _boardData[x, y] = tileData[y, x].value;
-                    _boardData[x, y] |= (tileData[y, x].isOnLoop ? 1 : 0) << 6;
-                    _boardData[x, y] |= (tileData[y, x].isLocked ? 1 : 0) << 7;
-                    _boardData[x, y] |= (tileData[y, x].isHidden ? 1 : 0) << 8;
-                    _boardData[x, y] |= (tileData[y, x].isInvalid ? 1 : 0) << 9;
+                    _boardData[x, y] = tileData[y, x].Value;
+                    _boardData[x, y] |= (tileData[y, x].IsOnLoop ? 1 : 0) << 6;
+                    _boardData[x, y] |= (tileData[y, x].IsLocked ? 1 : 0) << 7;
+                    _boardData[x, y] |= (tileData[y, x].IsHidden ? 1 : 0) << 8;
+                    _boardData[x, y] |= (tileData[y, x].IsInvalid ? 1 : 0) << 9;
                 }
             }
         }

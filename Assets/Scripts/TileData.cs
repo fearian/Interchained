@@ -11,13 +11,13 @@ public static class Constants
 
 public class TileData : Node
 {
-    public int value { get; private set; } = 0;
-    private bool _isEmpty => value == 0;
-    private bool _isNumber => value is >= 1 and <= 7;
-    public bool isInvalid { get; private set; } = false;
-    public bool isOnLoop { get; private set; } = false;
-    public bool isLocked { get; private set; } = false;
-    public bool isHidden { get; private set; } = false;
+    public int Value { get; private set; } = 0;
+    public bool IsEmpty => Value == 0;
+    public bool IsNumber => Value is >= 1 and <= 7;
+    public bool IsInvalid { get; private set; } = false;
+    public bool IsOnLoop { get; private set; } = false;
+    public bool IsLocked { get; private set; } = false;
+    public bool IsHidden { get; private set; } = false;
 
     public UnityEvent onValueChanged;
     public UnityEvent onStatusChanged;
@@ -27,43 +27,43 @@ public class TileData : Node
         if (newValue < 0 || newValue > Constants.MAX_CELL_VALUE)
         {
             //bool wasNumber = _isNumber;
-            Debug.Log($"VALUE: '{value}' is invalid, Set 0 instead");
+            Debug.Log($"VALUE: '{Value}' is invalid, Set 0 instead");
             newValue = 0;
             //if (_isNumber != wasNumber) onStatusChanged.Invoke();
             //if (_isNumber) isOnLoop = false;
         }
-        value = newValue;
+        Value = newValue;
 
         onValueChanged.Invoke();
 
-        return value;
+        return Value;
     }
 
     public override string ToString()
     {
-        return value.ToString();
+        return Value.ToString();
     }
 
     public void ToggleIsLoop()
     {
-        if (!_isNumber) return;
-        isOnLoop = !isOnLoop;
+        if (!IsNumber) return;
+        IsOnLoop = !IsOnLoop;
 
         onStatusChanged.Invoke();
     }
     public void ToggleIsLoop(bool isLoop)
     {
-        if (!_isNumber) return;
-        isOnLoop = isLoop;
+        if (!IsNumber) return;
+        IsOnLoop = isLoop;
 
         onStatusChanged.Invoke();
     }
 
     public void ClearTile()
     {
-        value = 0;
+        Value = 0;
         onValueChanged.Invoke();
-        isOnLoop = false;
+        IsOnLoop = false;
         onStatusChanged.Invoke();
     }
 }
