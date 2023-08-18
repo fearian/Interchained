@@ -1,8 +1,4 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.Serialization;
 
 [CreateAssetMenu(fileName = "Board Color Palette", menuName = "Interchained/Board Colors", order = 1)]
 public class BoardColors : ScriptableObject

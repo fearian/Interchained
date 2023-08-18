@@ -1,6 +1,5 @@
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using UnityEngine;
 
 public static class HexVectorExtensions {
@@ -81,6 +80,77 @@ public struct Hex {
             foreach (Hex hex in ring) {
                 yield return hex;
             }
+        }
+    }
+
+    public static IEnumerable<Hex> InvCone(Hex front, int direction, int distance)
+    {
+        if (distance == 0)
+        {
+            yield return front;
+        }
+        int mod(int x, int m) {
+            int r = x%m;
+            return r<0 ? r+m : r;
+        }
+
+        Hex dir = AXIAL_DIRECTIONS[mod(direction, 6)];
+        bool rev = false;
+        for (int ring = 0; ring < distance; ring++)
+        {
+            front += dir;
+            yield return front;
+            direction += 2* (rev ? -1 : 1);
+            dir = AXIAL_DIRECTIONS[mod(direction, 6)];
+            for (int step = 0; step <= ring; step++)
+            {
+                front += dir;
+                yield return front;
+            }
+            direction -= 1 * (rev ? -1 : 1);
+            dir = AXIAL_DIRECTIONS[mod(direction, 6)];
+            rev = !rev;
+        }
+    }
+    
+    public static IEnumerable<Hex> BiasCone(Hex front, int direction, int distance, int width = 3)
+    {
+        //TODO implement width!
+        if (distance == 0)
+        {
+            yield return front;
+        }
+        int mod(int x, int m) {
+            int r = x%m;
+            return r<0 ? r+m : r;
+        }
+        direction -= 1;
+        Hex dir;
+        bool rev = false;
+        yield return front;
+        for (int ring = 1; ring < distance; ring++)
+        {
+            //Turn and move forwards to the next ring
+            direction += 1 * (rev ? -1 : 1);
+            dir = AXIAL_DIRECTIONS[mod(direction, 6)];
+            front += dir;
+            yield return front;
+            direction += 2 * (rev ? -1 : 1);
+            dir = AXIAL_DIRECTIONS[mod(direction, 6)];
+            //Step along the ring...
+            for (int step = 0; step < ring; step++)
+            {
+                front += dir;
+                yield return front;
+            }
+            direction += 1 * (rev ? -1 : 1);
+            dir = AXIAL_DIRECTIONS[mod(direction, 6)];
+            for (int step = 0; step < ring; step++)
+            {
+                front += dir;
+                yield return front;
+            }
+            rev = !rev;
         }
     }
 

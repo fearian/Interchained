@@ -1,14 +1,20 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
-using Unity.VisualScripting;
 using UnityEngine;
 using static DebugUtils;
 using Color = UnityEngine.Color;
 using Quaternion = UnityEngine.Quaternion;
-using Vector2 = UnityEngine.Vector2;
 using Vector3 = UnityEngine.Vector3;
+
+public enum BoardRegions
+{
+    None = 0,
+    North = 1,
+    East = 2,
+    South = 3,
+    West = 4
+}
 
 public class HexGrid
 {
@@ -18,8 +24,13 @@ public class HexGrid
     private TileData[,] _gridArray;
     [SerializeField] private TileData _tileObject;
     public List<Hex> ValidHexes { get; private set; }
-    
-    
+    private Hex[] _regionNorth;
+    private Hex[] _regionEast;
+    private Hex[] _regionSouth;
+    private Hex[] _regionWest;
+    public Hex[][] Regions { get; private set; }
+
+
     private TextMeshPro[,] _debugTextArray;
 
     public TileData[,] GetGridArray()
@@ -32,6 +43,7 @@ public class HexGrid
         this.GridRadius = gridRadius;
         this._tileObject = tileObject;
         this.ValidHexes = new List<Hex>(Hex.Spiral(Hex.zero, 1, gridRadius));
+        StoreRegions();
 
         int arraySize = gridRadius * 2 + 1;
         _gridArray = new TileData[arraySize, arraySize];
@@ -65,7 +77,7 @@ public class HexGrid
         Vector3 pos = hex.ToWorld();
         
         TileData tile = GameObject.Instantiate<TileData>(_tileObject, pos, Quaternion.Euler(0,0,0), null);
-
+        tile.region = GetRegion(hex);
         return tile;
     }
 
@@ -145,6 +157,75 @@ public class HexGrid
                 }
             }
         }
+    }
+
+    public void StoreRegions()
+    {
+        //Inverse cone for North (1) South (4) regions
+        _regionNorth = Hex.InvCone(Hex.zero, 1, 3).ToArray();
+        _regionSouth = Hex.InvCone(Hex.zero, 4, 3).ToArray();
+        //Bias cone for East (5) West (2) regions
+        _regionEast =  Hex.BiasCone((Hex.zero + Hex.AXIAL_DIRECTIONS[0]), 5, 3).ToArray();
+        _regionWest =  Hex.BiasCone((Hex.zero + Hex.AXIAL_DIRECTIONS[3]), 2, 3).ToArray();
+
+        Regions = new Hex[4][];
+        Regions[0] = _regionNorth;
+        Regions[1] = _regionEast;
+        Regions[2] = _regionSouth;
+        Regions[3] = _regionWest;
+        
+        //DebugRegions(15f);
+
+        void DebugRegions(float time)
+        {
+            Hex next = Hex.zero;
+            Hex last = next;
+            foreach (Hex hex in Regions[0])
+            {
+                next = hex;
+                Debug.DrawLine(last.ToWorld(), next.ToWorld(), Color.red, time);
+                last = next;
+            }
+            foreach (Hex hex in Regions[1])
+            {
+                next = hex;
+                Debug.DrawLine(last.ToWorld(), next.ToWorld(), Color.green, time);
+                last = next;
+            }
+            foreach (Hex hex in Regions[2])
+            {
+                next = hex;
+                Debug.DrawLine(last.ToWorld(), next.ToWorld(), Color.blue, time);
+                last = next;
+            }
+            foreach (Hex hex in Regions[3])
+            {
+                next = hex;
+                Debug.DrawLine(last.ToWorld(), next.ToWorld(), Color.magenta, time);
+                last = next;
+            }
+        }
+    }
+
+    public BoardRegions GetRegion(Hex hex)
+    {
+        if (Regions == null)
+        {
+            Debug.LogError("Board Regions not assigned in Board Manager/Hex Grid!");
+            return 0;
+        }
+        
+        int i = 1;
+        foreach (Hex[] region in Regions)
+        {
+            if (region.Contains(hex))
+            {
+                return (BoardRegions)i;
+            }
+            i++;
+        }
+        Debug.LogWarning($"GetRegion: Hex {hex} not found in _regions.");
+        return (BoardRegions)0;
     }
 }
 

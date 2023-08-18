@@ -1,7 +1,4 @@
-using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using UnityEngine;
 
 public class Validator
 {
@@ -32,6 +29,23 @@ public class Validator
             }
         }
     }
-    
-    
+
+    public IEnumerable<Hex> IsDuplicatedInRegion(Hex hex)
+    {
+        TileData thisTile = _hexGrid.GetTile(hex);
+        if (thisTile.IsEmpty || thisTile.region == 0) yield break;
+
+        int region = (int)thisTile.region - 1;
+        foreach (Hex cell in _hexGrid.Regions[region])
+        {
+            TileData tile = _hexGrid.GetTile(cell);
+            if (tile.IsEmpty) continue;
+            if (thisTile.Value == tile.Value)
+            {
+                DebugUtils.DrawDebugHex(cell.ToWorld(), 2.5f);
+                yield return cell;
+            }
+        }
+    }
+
 }

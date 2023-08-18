@@ -1,10 +1,8 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
-using UnityEngine.Serialization;
 
 public class Interchained : MonoBehaviour
 {
@@ -24,6 +22,8 @@ public class Interchained : MonoBehaviour
     public UnityEvent onLevelLoaded;
 
     private HexGrid hexGrid;
+
+    private List<Hex> invalidTiles = new List<Hex>();
 
     private Vector3 mousePos;
     void Start()
@@ -49,11 +49,23 @@ public class Interchained : MonoBehaviour
         if (tile == null) return;
         if (cycleUp) tile.SetValue(tile.Value + 1);
         else tile.SetValue(tile.Value - 1);
-        foreach (var cell in _validator.IsDuplicatedAlongAxis(hex))
+        ValidateBySudoku(hex);
+        Debug.Log($"Tile ({hex.q},{hex.r}) value ({tile.Value}), in region ({tile.region})");
+    }
+
+    private void ValidateBySudoku(Hex hex)
+    {
+        var axis = _validator.IsDuplicatedAlongAxis(hex);
+        var region = _validator.IsDuplicatedInRegion(hex);
+
+        var combined = axis.Union(region);
+        foreach (Hex cell in combined)
         {
-            DebugUtils.DrawDebugHex(cell.ToWorld());
+            hexGrid.GetTile(cell).MarkInvalid(true);
+            Debug.DrawLine(hex.ToWorld(), cell.ToWorld(), Color.red, 1f);
         }
-        //Debug.Log($"Tile {hex.q},{hex.r} value {tile.Value}");
+
+        invalidTiles = combined.ToList();
     }
     
     private void MarkAsLoop(){

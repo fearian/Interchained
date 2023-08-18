@@ -1,6 +1,3 @@
-using System;
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 
@@ -8,6 +5,8 @@ public static class Constants
 {
     public const int MAX_CELL_VALUE = 9;
 }
+
+
 
 public class TileData : Node
 {
@@ -18,6 +17,7 @@ public class TileData : Node
     public bool IsOnLoop { get; private set; } = false;
     public bool IsLocked { get; private set; } = false;
     public bool IsHidden { get; private set; } = false;
+    public BoardRegions region;  
 
     public UnityEvent onValueChanged;
     public UnityEvent onStatusChanged;
@@ -56,6 +56,12 @@ public class TileData : Node
         if (!IsNumber) return;
         IsOnLoop = isLoop;
 
+        onStatusChanged.Invoke();
+    }
+
+    public void MarkInvalid(bool isInvalid)
+    {
+        IsInvalid = isInvalid;
         onStatusChanged.Invoke();
     }
 
