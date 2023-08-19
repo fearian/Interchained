@@ -8,6 +8,15 @@ public class Levels : ScriptableObject
 
     public void AddLevel(BoardData1D<int> level)
     {
+        foreach (var savedLevel in savedLevels)
+        {
+            if (level.Name == savedLevel.Name)
+            {
+                Debug.Log("Level name match, stealing the identity of matched level.");
+                savedLevel.Name += "_old";
+                level.Description = savedLevel.Description;
+            }
+        }
         savedLevels.Add(level);
     }
 

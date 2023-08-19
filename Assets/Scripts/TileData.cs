@@ -70,6 +70,7 @@ public class TileData : Node
         Value = 0;
         onValueChanged.Invoke();
         IsOnLoop = false;
+        IsInvalid = false;
         onStatusChanged.Invoke();
     }
 }

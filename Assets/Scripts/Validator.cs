@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 
 public class Validator
 {
@@ -11,6 +12,7 @@ public class Validator
     
     public IEnumerable<Hex> IsDuplicatedAlongAxis(Hex hex)
     {
+        int i = 0;
         TileData thisTile = _hexGrid.GetTile(hex);
         if (thisTile.IsEmpty || !thisTile.IsNumber) yield break;
 
@@ -20,18 +22,21 @@ public class Validator
 
             TileData tile = _hexGrid.GetTile(cell);
             if (tile.IsEmpty) continue;
-                DebugUtils.DrawDebugHex(cell.ToWorld(), 0.5f);
             
-            if (thisTile.Value == tile.Value)
+            if (thisTile.Value == tile.Value && !hex.Equals(cell))
             {
-                DebugUtils.DrawDebugHex(cell.ToWorld(), 2.5f);
+                DebugUtils.DrawDebugHex(cell.ToWorld(), 3f);
+                i++;
                 yield return cell;
             }
         }
+        // if we detect a duplicate, we must be invalid too.
+        if (i > 0) yield return hex;
     }
 
     public IEnumerable<Hex> IsDuplicatedInRegion(Hex hex)
     {
+        int i = 0;
         TileData thisTile = _hexGrid.GetTile(hex);
         if (thisTile.IsEmpty || thisTile.region == 0) yield break;
 
@@ -40,12 +45,23 @@ public class Validator
         {
             TileData tile = _hexGrid.GetTile(cell);
             if (tile.IsEmpty) continue;
-            if (thisTile.Value == tile.Value)
+            if (thisTile.Value == tile.Value && !hex.Equals(cell))
             {
-                DebugUtils.DrawDebugHex(cell.ToWorld(), 2.5f);
+                DebugUtils.DrawDebugHex(cell.ToWorld(), 3f);
+                i++;
                 yield return cell;
             }
         }
+        // if we detect a duplicate, we must be invalid too.
+        if (i > 0) yield return hex;
+    }
+
+    public bool InvalidBySudoku(Hex hex)
+    {
+        var axis = IsDuplicatedAlongAxis(hex);
+        var region = IsDuplicatedInRegion(hex);
+
+        return (axis.Count() != 0 || region.Count() != 0);
     }
 
 }

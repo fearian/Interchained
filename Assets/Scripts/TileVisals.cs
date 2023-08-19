@@ -25,7 +25,7 @@ public class TileVisuals : MonoBehaviour
     private void SetLoopStatus()
     {
         if (tileData.IsInvalid) boardToken.material.color = boardColorPalette.invalidTile;
-        if (tileData.IsOnLoop) boardToken.material.color = boardColorPalette.loopTile;
+        else if (tileData.IsOnLoop) boardToken.material.color = boardColorPalette.loopTile;
         else boardToken.material.color = boardColorPalette.validTile;
     }
 

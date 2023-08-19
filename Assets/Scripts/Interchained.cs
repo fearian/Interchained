@@ -49,8 +49,56 @@ public class Interchained : MonoBehaviour
         if (tile == null) return;
         if (cycleUp) tile.SetValue(tile.Value + 1);
         else tile.SetValue(tile.Value - 1);
+        ReCheckInvalidTiles();
         ValidateBySudoku(hex);
-        Debug.Log($"Tile ({hex.q},{hex.r}) value ({tile.Value}), in region ({tile.region})");
+        Debug.Log($"Tile ({hex.q},{hex.r}) value ({tile.Value}, {(tile.IsInvalid ? "Invalid" : "Valid")}), in region ({tile.region})");
+    }
+
+    public void CheckBaord()
+    {
+        if (IsSolved())
+        {
+            Debug.Log("U WON!!!");
+        }
+        else Debug.Log("NOT SOLVED");
+    }
+
+    public bool IsSolved()
+    {
+        if (invalidTiles.Count != 0) return false;
+        bool allValid = true;
+        foreach (Hex hex in hexGrid.ValidHexes)
+        {
+            if (hexGrid.GetTile(hex).IsEmpty) allValid = false;
+            var axis = _validator.IsDuplicatedAlongAxis(hex);
+            var region = _validator.IsDuplicatedInRegion(hex);
+            if (axis.Count() != 0 || region.Count() != 0)
+            {
+                allValid = false;
+                var combined = axis.Union(region);
+                foreach (Hex cell in combined)
+                {
+                    hexGrid.GetTile(cell).MarkInvalid(true);
+                    Debug.DrawLine(hex.ToWorld(), cell.ToWorld(), Color.red, 1f);
+                    invalidTiles.Add(cell);
+                }
+
+            }
+
+        }
+        return allValid;
+    }
+
+    private void ReCheckInvalidTiles()
+    {
+        if (invalidTiles.Count == 0) return;
+        foreach (Hex hex in invalidTiles)
+        {
+            if (!_validator.InvalidBySudoku(hex))
+            {
+                hexGrid.GetTile(hex).MarkInvalid(false);
+            }
+        }
     }
 
     private void ValidateBySudoku(Hex hex)
@@ -63,11 +111,10 @@ public class Interchained : MonoBehaviour
         {
             hexGrid.GetTile(cell).MarkInvalid(true);
             Debug.DrawLine(hex.ToWorld(), cell.ToWorld(), Color.red, 1f);
+            invalidTiles.Add(cell);
         }
-
-        invalidTiles = combined.ToList();
     }
-    
+
     private void MarkAsLoop(){
         Hex hex = Hex.FromWorld(mousePos); 
         DebugUtils.DrawDebugHex(hex.ToWorld(), 0.1f);
