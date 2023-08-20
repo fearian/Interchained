@@ -3,6 +3,7 @@ using System.Linq;
 using TMPro;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.Tilemaps;
 
 public class Interchained : MonoBehaviour
 {
@@ -50,8 +51,9 @@ public class Interchained : MonoBehaviour
         if (cycleUp) tile.SetValue(tile.Value + 1);
         else tile.SetValue(tile.Value - 1);
         ReCheckInvalidTiles();
-        ValidateBySudoku(hex);
-        Debug.Log($"Tile ({hex.q},{hex.r}) value ({tile.Value}, {(tile.IsInvalid ? "Invalid" : "Valid")}), in region ({tile.region})");
+        if (tile.IsNumber) ValidateBySudoku(hex);
+        else ValidateGear(hex);
+        //Debug.Log($"Tile ({hex.q},{hex.r}) value ({tile.Value}, {(tile.IsInvalid ? "Invalid" : "Valid")}), in region ({tile.region})");
     }
 
     public void CheckBaord()
@@ -92,12 +94,36 @@ public class Interchained : MonoBehaviour
     private void ReCheckInvalidTiles()
     {
         if (invalidTiles.Count == 0) return;
+
+        TileData tile;
+        List<Hex> markedAsValid = new List<Hex>();
+        
         foreach (Hex hex in invalidTiles)
         {
-            if (!_validator.InvalidBySudoku(hex))
+            tile = hexGrid.GetTile(hex);
+
+            if (tile.IsNumber)
             {
-                hexGrid.GetTile(hex).MarkInvalid(false);
+                if (!_validator.InvalidNumber(hex))
+                {
+                    markedAsValid.Add(hex);
+                    tile.MarkInvalid(false);
+                }
             }
+            else
+            {
+                if (!_validator.InvalidGear(hex))
+                {
+                    markedAsValid.Add(hex);
+                    tile.MarkInvalid(false);
+                    Debug.Log("Happily marking gear as now valid");
+                }
+            }
+        }
+
+        foreach (Hex validHex in markedAsValid)
+        {
+            invalidTiles.Remove(validHex);
         }
     }
 
@@ -107,6 +133,22 @@ public class Interchained : MonoBehaviour
         var region = _validator.IsDuplicatedInRegion(hex);
 
         var combined = axis.Union(region);
+        foreach (Hex cell in combined)
+        {
+            hexGrid.GetTile(cell).MarkInvalid(true);
+            Debug.DrawLine(hex.ToWorld(), cell.ToWorld(), Color.red, 1f);
+            invalidTiles.Add(cell);
+        }
+    }
+
+    private void ValidateGear(Hex hex)
+    {
+        if (hexGrid.GetTile(hex).IsNumber) return;
+
+        var neighbours = _validator.GearIsStuckOnGear(hex);
+        var region = _validator.IsDuplicatedInRegion(hex);
+
+        var combined = neighbours.Union(region);
         foreach (Hex cell in combined)
         {
             hexGrid.GetTile(cell).MarkInvalid(true);

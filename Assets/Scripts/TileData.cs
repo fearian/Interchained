@@ -11,7 +11,7 @@ public static class Constants
 public class TileData : Node
 {
     public int Value { get; private set; } = 0;
-    public bool IsEmpty => Value == 0;
+    public bool IsEmpty => (Value == 0);
     public bool IsNumber => Value is >= 1 and <= 7;
     public bool IsInvalid { get; private set; } = false;
     public bool IsOnLoop { get; private set; } = false;

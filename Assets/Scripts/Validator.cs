@@ -56,12 +56,44 @@ public class Validator
         if (i > 0) yield return hex;
     }
 
-    public bool InvalidBySudoku(Hex hex)
+    public IEnumerable<Hex> GearIsStuckOnGear(Hex hex)
+    {
+        TileData thisTile = _hexGrid.GetTile(hex);
+        if (thisTile.IsEmpty || thisTile.region == 0) yield break;
+
+        int i = 0;
+        foreach (Hex neighbour in hex.Neighbours())
+        {
+            if (!_hexGrid.ValidHexes.Contains(neighbour)) continue;
+
+            TileData neighbouringTile = _hexGrid.GetTile(neighbour);
+            if (neighbouringTile.IsEmpty) continue;
+            
+            if (thisTile.Value == neighbouringTile.Value && !hex.Equals(neighbour))
+            {
+                i++;
+                DebugUtils.DrawDebugHex(neighbour.ToWorld(), 3f);
+                yield return neighbour;
+            }
+
+        }
+        if (i > 0) yield return hex;
+    }
+
+    public bool InvalidNumber(Hex hex)
     {
         var axis = IsDuplicatedAlongAxis(hex);
         var region = IsDuplicatedInRegion(hex);
 
         return (axis.Count() != 0 || region.Count() != 0);
+    }
+
+    public bool InvalidGear(Hex hex)
+    {
+        var neighbours = GearIsStuckOnGear(hex);
+        var region = IsDuplicatedInRegion(hex);
+
+        return (neighbours.Count() != 0 || region.Count() != 0);
     }
 
 }

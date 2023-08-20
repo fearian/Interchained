@@ -12,11 +12,16 @@ public class TileVisuals : MonoBehaviour
     [SerializeField] private TextMeshPro label;
     [SerializeField] private Transform gearCW;
     [SerializeField] private Transform gearCCW;
+    private Rotator cwRotator;
+    private Rotator ccwRotator;
+    
     private void Awake()
     {
         tileData = GetComponent<TileData>();
         tileData.onValueChanged.AddListener(SetVisuals);
         tileData.onStatusChanged.AddListener(SetLoopStatus);
+        cwRotator = gearCW.GetComponentInChildren<Rotator>();
+        ccwRotator = gearCCW.GetComponentInChildren<Rotator>();
 
         SetVisuals();
         SetLoopStatus();
@@ -24,9 +29,22 @@ public class TileVisuals : MonoBehaviour
 
     private void SetLoopStatus()
     {
-        if (tileData.IsInvalid) boardToken.material.color = boardColorPalette.invalidTile;
-        else if (tileData.IsOnLoop) boardToken.material.color = boardColorPalette.loopTile;
-        else boardToken.material.color = boardColorPalette.validTile;
+        if (tileData.IsInvalid)
+        {
+            cwRotator?.IsRotating(false);
+            ccwRotator?.IsRotating(false);
+            boardToken.material.color = boardColorPalette.invalidTile;
+        }
+        else if (tileData.IsOnLoop)
+        {
+            boardToken.material.color = boardColorPalette.loopTile;
+        }
+        else
+        {
+            cwRotator?.IsRotating(true);
+            ccwRotator?.IsRotating(true);
+            boardToken.material.color = boardColorPalette.validTile;
+        }
     }
 
     public void SetVisuals()
