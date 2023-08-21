@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.Serialization;
 
 public static class Constants
 {
@@ -13,14 +14,16 @@ public class TileData : Node
     public int Value { get; private set; } = 0;
     public bool IsEmpty => (Value == 0);
     public bool IsNumber => Value is >= 1 and <= 7;
+    public bool IsGear => Value is 8 or 9;
     public bool IsInvalid { get; private set; } = false;
     public bool IsOnLoop { get; private set; } = false;
+    public bool IsOnLoopIncorrectly { get; private set; } = false;
     public bool IsLocked { get; private set; } = false;
     public bool IsHidden { get; private set; } = false;
     public BoardRegions region;  
 
     public UnityEvent onValueChanged;
-    public UnityEvent onStatusChanged;
+    [FormerlySerializedAs("onStatusChanged")] public UnityEvent onLoopChanged;
 
     public int SetValue(int newValue)
     {
@@ -46,23 +49,31 @@ public class TileData : Node
 
     public void ToggleIsLoop()
     {
-        if (!IsNumber) return;
         IsOnLoop = !IsOnLoop;
 
-        onStatusChanged.Invoke();
+        onValueChanged.Invoke();
+        onLoopChanged.Invoke();
     }
     public void ToggleIsLoop(bool isLoop)
     {
-        if (!IsNumber) return;
         IsOnLoop = isLoop;
-
-        onStatusChanged.Invoke();
+        
+        onValueChanged.Invoke();
+        onLoopChanged.Invoke();
     }
 
-    public void MarkInvalid(bool isInvalid)
+    public void MarkInvalid(bool isInvalid, bool regardingLoop = false)
     {
-        IsInvalid = isInvalid;
-        onStatusChanged.Invoke();
+        if (regardingLoop)
+        {
+            IsOnLoopIncorrectly = isInvalid;
+            onLoopChanged.Invoke();
+        }
+        else
+        {
+            IsInvalid = isInvalid;
+            onValueChanged.Invoke();
+        }
     }
 
     public void ClearTile()
@@ -71,7 +82,7 @@ public class TileData : Node
         onValueChanged.Invoke();
         IsOnLoop = false;
         IsInvalid = false;
-        onStatusChanged.Invoke();
+        onLoopChanged.Invoke();
     }
 }
 

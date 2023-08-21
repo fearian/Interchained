@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Tilemaps;
@@ -25,6 +26,7 @@ public class Interchained : MonoBehaviour
     private HexGrid hexGrid;
 
     private List<Hex> invalidTiles = new List<Hex>();
+    private List<Hex> incorrectLoops = new List<Hex>();
 
     private Vector3 mousePos;
     void Start()
@@ -36,27 +38,98 @@ public class Interchained : MonoBehaviour
     private void Update()
     {
         mousePos = GetMouseWorldPosition();
-        //DebugUtils.DrawDebugHex(new Vector3(mousePos.x, 0, mousePos.z), 0.3f);
-        if (Input.GetMouseButtonDown(0)) CycleValues(true);
-        if (Input.GetMouseButtonDown(1)) CycleValues(false);
-        if (Input.GetKeyDown(KeyCode.Return)||Input.GetKeyDown(KeyCode.KeypadEnter)) MarkAsLoop();
+        AcceptInput();
     }
 
-    private void CycleValues(bool cycleUp = true)
+    private void AcceptInput()
     {
-        Hex hex = Hex.FromWorld(mousePos); 
-        DebugUtils.DrawDebugHex(hex.ToWorld(), 0.1f);
-        TileData tile = hexGrid.GetTile(hex);
+        // Mouse input on tiles
+        if (Input.GetMouseButtonDown(0)) CycleValue(true);
+        if (Input.GetMouseButtonDown(1)) CycleValue(false);
+        
+        // Place tiles 1-9
+        if (Input.GetKeyUp(KeyCode.Alpha1) || Input.GetKeyUp(KeyCode.Keypad1)) SetTile(1);
+        if (Input.GetKeyUp(KeyCode.Alpha2) || Input.GetKeyUp(KeyCode.Keypad2)) SetTile(2);
+        if (Input.GetKeyUp(KeyCode.Alpha3) || Input.GetKeyUp(KeyCode.Keypad3)) SetTile(3);
+        if (Input.GetKeyUp(KeyCode.Alpha4) || Input.GetKeyUp(KeyCode.Keypad4)) SetTile(4);
+        if (Input.GetKeyUp(KeyCode.Alpha5) || Input.GetKeyUp(KeyCode.Keypad5)) SetTile(5);
+        if (Input.GetKeyUp(KeyCode.Alpha6) || Input.GetKeyUp(KeyCode.Keypad6)) SetTile(6);
+        if (Input.GetKeyUp(KeyCode.Alpha7) || Input.GetKeyUp(KeyCode.Keypad7)) SetTile(7);
+        if (Input.GetKeyUp(KeyCode.Alpha8) || Input.GetKeyUp(KeyCode.Keypad8)) SetTile(8);
+        if (Input.GetKeyUp(KeyCode.Alpha9) || Input.GetKeyUp(KeyCode.Keypad9)) SetTile(9);
+        
+        // Clear tiles
+        if (Input.GetKeyUp(KeyCode.Delete) || Input.GetKeyUp(KeyCode.Backspace)) ClearTile();
+        
+        // Mark the loop
+        if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyUp(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.L)) MarkAsLoop();
+    }
+
+    private Hex HexUnderCursor()
+    {
+        return Hex.FromWorld(mousePos);
+    }
+
+    private TileData TileUnderCursor()
+    {
+        return hexGrid.GetTile(HexUnderCursor());
+    }
+
+    private void CycleValue(bool cycleUp = true)
+    {
+        TileData tile = TileUnderCursor();
         if (tile == null) return;
-        if (cycleUp) tile.SetValue(tile.Value + 1);
-        else tile.SetValue(tile.Value - 1);
-        ReCheckInvalidTiles();
-        if (tile.IsNumber) ValidateBySudoku(hex);
-        else ValidateGear(hex);
+        
+        tile.SetValue(tile.Value + (cycleUp ? +1 : -1));
+        
+        ValidationPass(tile);
+    }
+
+    private void SetTile(int value)
+    {
+        TileData tile = TileUnderCursor();
+        if (tile == null) return;
+
+        tile.SetValue(value);
+        
+        ValidationPass(tile);
+
         //Debug.Log($"Tile ({hex.q},{hex.r}) value ({tile.Value}, {(tile.IsInvalid ? "Invalid" : "Valid")}), in region ({tile.region})");
     }
 
-    public void CheckBaord()
+    private void ClearTile()
+    {
+        TileData tile = TileUnderCursor();
+        if (tile == null) return;
+        
+        if (tile.IsEmpty) tile.ToggleIsLoop(false);
+        else tile.SetValue(0);
+        
+        ValidationPass(tile);
+    }
+    
+    private void MarkAsLoop(){
+        TileData tile = TileUnderCursor();
+        if (tile == null) return;
+        tile.ToggleIsLoop();
+
+        ReCheckIncorrectLoops();
+        
+        // validate loop placement
+        if (tile.IsOnLoop) ValidateIsOnLoop(tile.hex);
+    }
+
+    public void ValidationPass(TileData tile)
+    {
+        // Recheck previously invalid tiles, in case the recent change has fixed them
+        ReCheckInvalidTiles();
+        
+        // Validate numbers and gears
+        if (tile.IsNumber) ValidateBySudoku(tile.hex);
+        else ValidateGear(tile.hex);
+    }
+
+    public void CheckBoard()
     {
         if (IsSolved())
         {
@@ -91,17 +164,51 @@ public class Interchained : MonoBehaviour
         return allValid;
     }
 
+    private void ReCheckIncorrectLoops()
+    {
+        if (incorrectLoops.Count == 0) return;
+
+        TileData tile;
+        List<Hex> markOkay = new List<Hex>();
+
+        foreach (Hex hex in incorrectLoops)
+        {
+            tile = hexGrid.GetTile(hex);
+
+            if (!tile.IsOnLoop)
+            {
+                markOkay.Add(hex);
+                tile.MarkInvalid(false, true);
+            }
+            else
+            {
+                int sidesTouchingLoop = _validator.SidesTouchingLoop(hex);
+                Debug.Log($"{tile.hex} IsOnLoop:{tile.IsOnLoop}, touching {sidesTouchingLoop} other loop tiles.");
+                if (sidesTouchingLoop < 3)
+                {
+                    markOkay.Add(hex);
+                    tile.MarkInvalid(false, true);
+                }
+            }
+        }
+
+        foreach (Hex validLoop in markOkay)
+        {
+            incorrectLoops.Remove(validLoop);
+        }
+    }
+
     private void ReCheckInvalidTiles()
     {
         if (invalidTiles.Count == 0) return;
-
+        
         TileData tile;
         List<Hex> markedAsValid = new List<Hex>();
         
         foreach (Hex hex in invalidTiles)
         {
             tile = hexGrid.GetTile(hex);
-
+            
             if (tile.IsNumber)
             {
                 if (!_validator.InvalidNumber(hex))
@@ -110,7 +217,7 @@ public class Interchained : MonoBehaviour
                     tile.MarkInvalid(false);
                 }
             }
-            else
+            else if (tile.IsGear)
             {
                 if (!_validator.InvalidGear(hex))
                 {
@@ -157,14 +264,18 @@ public class Interchained : MonoBehaviour
         }
     }
 
-    private void MarkAsLoop(){
-        Hex hex = Hex.FromWorld(mousePos); 
-        DebugUtils.DrawDebugHex(hex.ToWorld(), 0.1f);
-        TileData tile = hexGrid.GetTile(hex);
-        if (tile == null) return;
-        Debug.Log($"Enter Key Down @{hex.q},{hex.r}. Loop: {tile.IsOnLoop}");
-        tile.ToggleIsLoop();
+    private void ValidateIsOnLoop(Hex hex)
+    {
+        var incorrectLoop = _validator.IsTouchingLoopIncorrectly(hex);
+
+        foreach (Hex loopCell in incorrectLoop)
+        {
+            hexGrid.GetTile(loopCell).MarkInvalid(true, true);
+            incorrectLoops.Add(loopCell);
+            Debug.DrawLine(hex.ToWorld(), loopCell.ToWorld(), Color.red, 1f);
+        }
     }
+
 
     private Vector3 GetMouseWorldPosition()
     {

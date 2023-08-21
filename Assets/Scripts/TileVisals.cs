@@ -1,3 +1,4 @@
+using System;
 using TMPro;
 using UnityEngine;
 
@@ -19,7 +20,7 @@ public class TileVisuals : MonoBehaviour
     {
         tileData = GetComponent<TileData>();
         tileData.onValueChanged.AddListener(SetVisuals);
-        tileData.onStatusChanged.AddListener(SetLoopStatus);
+        tileData.onLoopChanged.AddListener(SetLoopStatus);
         cwRotator = gearCW.GetComponentInChildren<Rotator>();
         ccwRotator = gearCCW.GetComponentInChildren<Rotator>();
 
@@ -27,8 +28,26 @@ public class TileVisuals : MonoBehaviour
         SetLoopStatus();
     }
 
+    private void Update()
+    {
+        SetVisuals();
+    }
+
     private void SetLoopStatus()
     {
+        if (tileData.IsOnLoopIncorrectly)
+        {
+            boardToken.transform.localScale = new Vector3(0.6f, 0.6f, 0.6f);
+        }
+        else
+        {
+            boardToken.transform.localScale = new Vector3(1f, 1f, 1f);
+        }
+    }
+
+    public void SetVisuals()
+    {
+        // Set Token visuals
         if (tileData.IsInvalid)
         {
             cwRotator?.IsRotating(false);
@@ -37,6 +56,8 @@ public class TileVisuals : MonoBehaviour
         }
         else if (tileData.IsOnLoop)
         {
+            cwRotator?.IsRotating(false);
+            ccwRotator?.IsRotating(false);
             boardToken.material.color = boardColorPalette.loopTile;
         }
         else
@@ -45,13 +66,21 @@ public class TileVisuals : MonoBehaviour
             ccwRotator?.IsRotating(true);
             boardToken.material.color = boardColorPalette.validTile;
         }
-    }
 
-    public void SetVisuals()
-    {
-        if (tileData.Value == 0)
+        // Set Data Visuals
+        if (tileData.Value == 0 && !tileData.IsOnLoop)
         {
             visualContainer.SetActive(false);
+            
+            return;
+        }
+        else if (tileData.Value == 0 && tileData.IsOnLoop)
+        {
+            visualContainer.SetActive(true);
+            gearCW.gameObject.SetActive(false);
+            gearCCW.gameObject.SetActive(false);
+            label.gameObject.SetActive(false);
+
             return;
         }
         else if (tileData.Value >= 1 && tileData.Value <= 7)

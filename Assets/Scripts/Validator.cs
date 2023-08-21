@@ -80,6 +80,44 @@ public class Validator
         if (i > 0) yield return hex;
     }
 
+    public IEnumerable<Hex> IsTouchingLoopIncorrectly(Hex hex)
+    {
+        TileData thisTile = _hexGrid.GetTile(hex);
+        if (thisTile.region == 0) yield break;
+
+        foreach (Hex neighbour in hex.Neighbours())
+        {
+            if (!_hexGrid.ValidHexes.Contains(neighbour)) continue;
+            
+            TileData neighbouringTile = _hexGrid.GetTile(neighbour);
+            if (neighbouringTile.IsOnLoop == false) continue;
+            
+            if (SidesTouchingLoop(neighbour) >= 3)
+            {
+                yield return neighbour;
+            }
+        }
+
+        if (SidesTouchingLoop(hex) >= 3) yield return hex;
+    }
+
+    public int SidesTouchingLoop(Hex hex)
+    {
+        TileData thisTile = _hexGrid.GetTile(hex);
+        if (thisTile.region == 0) return 0;
+
+        int i = 0;
+        foreach (Hex neighbour in hex.Neighbours())
+        {
+            if (!_hexGrid.ValidHexes.Contains(neighbour)) continue;
+            
+            TileData neighbouringTile = _hexGrid.GetTile(neighbour);
+            if (neighbouringTile.IsOnLoop) i++;
+        }
+
+        return i;
+    }
+
     public bool InvalidNumber(Hex hex)
     {
         var axis = IsDuplicatedAlongAxis(hex);

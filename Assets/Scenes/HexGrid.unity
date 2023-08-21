@@ -2952,7 +2952,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 1042517099}
         m_TargetAssemblyTypeName: Interchained, Assembly-CSharp
-        m_MethodName: CheckBaord
+        m_MethodName: CheckBoard
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -7480,9 +7480,11 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Interchained - Digital Paper Prototype // Left Click: tile++ // Right
-    Click: tile-- // Enter: Mark as loop // Send screenshots of valid board states
-    to @fearian!'
+  m_text: 'Interchained - Digital Paper Prototype.3 // 1-9: Place Tiles // Left Click:
+    tile++ // Right Click: tile-- // L or Enter: Mark as loop // BSpace or Delete:
+    Clear Tile //
+
+    Send screenshots of valid board states to @fearian!'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
