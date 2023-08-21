@@ -321,6 +321,7 @@ public class Interchained : MonoBehaviour
         }
         hexGrid.ClearBoard();
         hexGrid.SetBoard(boardState);
+        puzzleInfoField.text = "<b>" + boardState.Name + "</b>" + "\n" + boardState.Description;
         
         onLevelLoaded.Invoke();
     }

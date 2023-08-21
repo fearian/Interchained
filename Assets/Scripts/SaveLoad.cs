@@ -5,6 +5,7 @@ using UnityEngine;
 public class SaveLoad : MonoBehaviour
 {
     [SerializeField] private TMP_InputField puzzleNameInput;
+    [SerializeField] private TMP_InputField jsonInputField;
     [SerializeField] private Levels levelsList;
     private BoardData1D<int> _boardData;
 
@@ -61,7 +62,8 @@ public class SaveLoad : MonoBehaviour
     {
         _boardData = ToBoardData1D(hexGrid);
         string json = FormatJson(_boardData);
-        GUIUtility.systemCopyBuffer = FormatForClipboard(json);
+        jsonInputField.text = FormatForClipboard(json);
+        //GUIUtility.systemCopyBuffer = FormatForClipboard(json);
     }
 
     private string FormatJson(BoardData1D<int> boardData)
@@ -81,10 +83,9 @@ public class SaveLoad : MonoBehaviour
 
     public BoardData1D<int> PasteFromClipboard()
     {
-        string json = GUIUtility.systemCopyBuffer;
+        string json = jsonInputField.text;//GUIUtility.systemCopyBuffer;
         try
         {
-            BoardData1D<int> boardData = JsonUtility.FromJson<BoardData1D<int>>(json);
             return JsonUtility.FromJson<BoardData1D<int>>(json);
         }
         catch (System.Exception exception)
