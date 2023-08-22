@@ -1,5 +1,6 @@
 using System;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class SaveLoad : MonoBehaviour
@@ -44,6 +45,7 @@ public class SaveLoad : MonoBehaviour
                     _boardData[x, y] |= (tileData[y, x].IsLocked ? 1 : 0) << 7;
                     _boardData[x, y] |= (tileData[y, x].IsHidden ? 1 : 0) << 8;
                     _boardData[x, y] |= (tileData[y, x].IsInvalid ? 1 : 0) << 9;
+                    Debug.Log(_boardData[x,y].ToBinaryString());
                 }
             }
         }

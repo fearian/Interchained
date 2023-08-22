@@ -153,6 +153,7 @@ public class HexGrid
                 {
                     // See Bit Cheat Sheet in SaveLoad.cs
                     _gridArray[x, y].SetValue(boardState[y, x] & 0b111111);
+                    if (((boardState[y, x] >> 7) & 0b1) == 1) _gridArray[x, y].MarkLocked(true);
                     if (((boardState[y, x] >> 6) & 0b1) == 1) _gridArray[x, y].ToggleIsLoop(true);
                 }
             }

@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Default Board Color Palette
   m_EditorClassIdentifier: 
   pair12: {r: 0.46975243, g: 0.9150943, b: 0.10791205, a: 1}
-  pair34: {r: 0.003921571, g: 0.66960853, b: 0.8980392, a: 1}
+  pair34: {r: 0.15566039, g: 0.7226922, b: 1, a: 1}
   pair56: {r: 1, g: 0.11792451, b: 0.23297802, a: 1}
   tile7: {r: 1, g: 0.69459856, b: 0.015686274, a: 1}
   gears: {r: 1, g: 1, b: 1, a: 1}
@@ -21,11 +21,14 @@ MonoBehaviour:
   regionEast: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   regionSouth: {r: 0.5, g: 0.5, b: 0.5, a: 1}
   regionWest: {r: 0.5, g: 0.5, b: 0.5, a: 1}
-  validTile: {r: 0.05882353, g: 0.039215688, b: 0.36862746, a: 0.6039216}
-  invalidTile: {r: 0.8679245, g: 0, b: 0.397, a: 0.87058824}
-  loopTile: {r: 0.3254982, g: 0.8773585, b: 0.21106264, a: 0.83137256}
+  validTile: {r: 0.05678178, g: 0.12171024, b: 0.41509432, a: 0.6313726}
+  invalidTile: {r: 1, g: 0.23113209, b: 0.55341214, a: 0.8235294}
+  loopTile: {r: 0.37131175, g: 0.9433962, b: 0.25364897, a: 0.7019608}
   loopComplete: {r: 0.24719654, g: 0.9528302, b: 0.43594474, a: 0.77254903}
+  tokenMesh: {fileID: -2165040118375620220, guid: dcd27400079b0084f8bc2b3c45db77dc, type: 3}
+  tokenMeshLocked: {fileID: 1027344081185098428, guid: ee737b0166b2d8940bf7561989c48290, type: 3}
   tokenMat: {fileID: 2100000, guid: 7ca6a171912f9824db55005aa0c59651, type: 2}
   invalidTokenMat: {fileID: 0}
+  lockedTokenMat: {fileID: 0}
   loopTokenMat: {fileID: 0}
   loopCompleteTokenMat: {fileID: 0}

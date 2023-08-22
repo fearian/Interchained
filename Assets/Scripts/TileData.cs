@@ -27,6 +27,7 @@ public class TileData : Node
 
     public int SetValue(int newValue)
     {
+        if (IsLocked) return Value;
         if (newValue < 0 || newValue > Constants.MAX_CELL_VALUE)
         {
             //bool wasNumber = _isNumber;
@@ -76,8 +77,15 @@ public class TileData : Node
         }
     }
 
+    public void MarkLocked(bool isLocked)
+    {
+        IsLocked = isLocked;
+        onValueChanged.Invoke();
+    }
+
     public void ClearTile()
     {
+        IsLocked = false;
         Value = 0;
         onValueChanged.Invoke();
         IsOnLoop = false;

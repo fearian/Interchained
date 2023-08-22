@@ -10,6 +10,7 @@ public class TileVisuals : MonoBehaviour
     [SerializeField] public BoardColors boardColorPalette;
     [SerializeField] private GameObject visualContainer;
     [SerializeField] private MeshRenderer boardToken;
+    private MeshFilter tokenMesh;
     [SerializeField] private TextMeshPro label;
     [SerializeField] private Transform gearCW;
     [SerializeField] private Transform gearCCW;
@@ -23,6 +24,7 @@ public class TileVisuals : MonoBehaviour
         tileData.onLoopChanged.AddListener(SetLoopStatus);
         cwRotator = gearCW.GetComponentInChildren<Rotator>();
         ccwRotator = gearCCW.GetComponentInChildren<Rotator>();
+        tokenMesh = boardToken.GetComponent<MeshFilter>();
 
         SetVisuals();
         SetLoopStatus();
@@ -47,6 +49,16 @@ public class TileVisuals : MonoBehaviour
 
     public void SetVisuals()
     {
+        // set locked mesh
+        if (tileData.IsLocked)
+        {
+            tokenMesh.mesh = boardColorPalette.tokenMeshLocked;
+        }
+        else
+        {
+            tokenMesh.mesh = boardColorPalette.tokenMesh;
+        }
+        
         // Set Token visuals
         if (tileData.IsInvalid)
         {

@@ -63,6 +63,13 @@ public class Interchained : MonoBehaviour
         
         // Mark the loop
         if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyUp(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.L)) MarkAsLoop();
+        
+        // Mark as Locked
+        if (Input.GetKeyUp(KeyCode.F))
+        {
+            Debug.Log("Freeze Criminal Scum");
+            ToggleLocked();
+        }
     }
 
     private Hex HexUnderCursor()
@@ -90,6 +97,7 @@ public class Interchained : MonoBehaviour
         TileData tile = TileUnderCursor();
         if (tile == null) return;
 
+        if (tile.Value == value) value = 0;
         tile.SetValue(value);
         
         ValidationPass(tile);
@@ -117,6 +125,14 @@ public class Interchained : MonoBehaviour
         
         // validate loop placement
         if (tile.IsOnLoop) ValidateIsOnLoop(tile.hex);
+    }
+
+    private void ToggleLocked()
+    {
+        TileData tile = TileUnderCursor();
+        if (tile == null) return;
+        
+        tile.MarkLocked(!tile.IsLocked);
     }
 
     public void ValidationPass(TileData tile)

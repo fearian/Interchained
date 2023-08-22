@@ -21,9 +21,14 @@ public class BoardColors : ScriptableObject
     public Color loopTile = Color.blue;
     public Color loopComplete = Color.green;
 
+    [Header("Token Meshes")]
+    public Mesh tokenMesh;
+    public Mesh tokenMeshLocked;
+
     [Header("Material Instances")]
     public Material tokenMat;
     public Material invalidTokenMat;
+    public Material lockedTokenMat;
     public Material loopTokenMat;
     public Material loopCompleteTokenMat;
 
