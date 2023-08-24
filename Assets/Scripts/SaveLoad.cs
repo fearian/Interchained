@@ -19,7 +19,7 @@ public class SaveLoad : MonoBehaviour
 
     // Bit cheatsheat:
     // Bits 0 - 5 are reserved for cell values up to 64
-    // bits 6 - 9 are flags for: 6:loop, 7:locked, 8:hidden, 9:invalid
+    // bits 6 - 9 are flags for: 6:loop, 7:locked, 8:hidden, 9:invalid, 10: blocker
     // bits 10 - 31 unused so far
 
     public BoardData1D<int> ToBoardData1D(HexGrid hexGrid)
@@ -45,6 +45,7 @@ public class SaveLoad : MonoBehaviour
                     _boardData[x, y] |= (tileData[y, x].IsLocked ? 1 : 0) << 7;
                     _boardData[x, y] |= (tileData[y, x].IsHidden ? 1 : 0) << 8;
                     _boardData[x, y] |= (tileData[y, x].IsInvalid ? 1 : 0) << 9;
+                    _boardData[x, y] |= (tileData[y, x].IsBlocker ? 1 : 0) << 10;
                     Debug.Log(_boardData[x,y].ToBinaryString());
                 }
             }

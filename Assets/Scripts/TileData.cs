@@ -15,6 +15,7 @@ public class TileData : Node
     public bool IsEmpty => (Value == 0);
     public bool IsNumber => Value is >= 1 and <= 7;
     public bool IsGear => Value is 8 or 9;
+    public bool IsBlocker => Value is 10;
     public bool IsInvalid { get; private set; } = false;
     public bool IsOnLoop { get; private set; } = false;
     public bool IsOnLoopIncorrectly { get; private set; } = false;
@@ -30,14 +31,10 @@ public class TileData : Node
         if (IsLocked) return Value;
         if (newValue < 0 || newValue > Constants.MAX_CELL_VALUE)
         {
-            //bool wasNumber = _isNumber;
-            Debug.Log($"VALUE: '{Value}' is invalid, Set 0 instead");
             newValue = 0;
-            //if (_isNumber != wasNumber) onStatusChanged.Invoke();
-            //if (_isNumber) isOnLoop = false;
         }
         Value = newValue;
-
+        
         onValueChanged.Invoke();
 
         return Value;
@@ -79,17 +76,42 @@ public class TileData : Node
 
     public void MarkLocked(bool isLocked)
     {
+        if (IsEmpty)
+        {
+            IsLocked = false;
+            return;
+        }
         IsLocked = isLocked;
         onValueChanged.Invoke();
     }
 
-    public void ClearTile()
+    public void MarkBlocker(bool isBlocker)
     {
-        IsLocked = false;
-        Value = 0;
-        onValueChanged.Invoke();
+        if (isBlocker)
+        {
+            Value = 10;
+            IsLocked = true;
+            IsOnLoop = false;
+            IsInvalid = false;
+            onValueChanged.Invoke();
+            onLoopChanged.Invoke();
+        }
+        else
+        {
+            ClearTile(true);
+        }
+    }
+
+    public void ClearTile(bool clearBlockers = false)
+    {
+        if (!IsBlocker || !IsLocked || clearBlockers)
+        {
+            IsLocked = false;
+            Value = 0;
+        }
         IsOnLoop = false;
         IsInvalid = false;
+        onValueChanged.Invoke();
         onLoopChanged.Invoke();
     }
 }

@@ -5,6 +5,8 @@ using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Tilemaps;
+using UnityEngine.UIElements;
+using Toggle = UnityEngine.UI.Toggle;
 
 public class Interchained : MonoBehaviour
 {
@@ -19,6 +21,8 @@ public class Interchained : MonoBehaviour
     private Validator _validator;
     
     [SerializeField] private TextMeshProUGUI puzzleInfoField;
+    [SerializeField] public Toggle createModeToggle;
+    public bool inCreateMode => createModeToggle.isOn;
 
     public UnityEvent onLevelSaved;
     public UnityEvent onLevelLoaded;
@@ -64,11 +68,11 @@ public class Interchained : MonoBehaviour
         // Mark the loop
         if (Input.GetKeyDown(KeyCode.Return) || Input.GetKeyUp(KeyCode.KeypadEnter) || Input.GetKeyDown(KeyCode.L)) MarkAsLoop();
         
-        // Mark as Locked
-        if (Input.GetKeyUp(KeyCode.F))
+        // Create Mode only inputs
+        if (inCreateMode)
         {
-            Debug.Log("Freeze Criminal Scum");
-            ToggleLocked();
+            if (Input.GetKeyUp(KeyCode.F)) ToggleLocked();
+            if (Input.GetKeyUp(KeyCode.Alpha0) || Input.GetKeyUp(KeyCode.Keypad0)) SetBlocker();
         }
     }
 
@@ -89,6 +93,7 @@ public class Interchained : MonoBehaviour
         
         tile.SetValue(tile.Value + (cycleUp ? +1 : -1));
         
+        
         ValidationPass(tile);
     }
 
@@ -97,8 +102,11 @@ public class Interchained : MonoBehaviour
         TileData tile = TileUnderCursor();
         if (tile == null) return;
 
-        if (tile.Value == value) value = 0;
-        tile.SetValue(value);
+        if (tile.Value == value)
+        {
+            ClearTile();
+        }
+        else tile.SetValue(value);
         
         ValidationPass(tile);
 
@@ -109,9 +117,10 @@ public class Interchained : MonoBehaviour
     {
         TileData tile = TileUnderCursor();
         if (tile == null) return;
-        
+
         if (tile.IsEmpty) tile.ToggleIsLoop(false);
         else tile.SetValue(0);
+        //else tile.ClearTile(inCreateMode);
         
         ValidationPass(tile);
     }
@@ -133,6 +142,16 @@ public class Interchained : MonoBehaviour
         if (tile == null) return;
         
         tile.MarkLocked(!tile.IsLocked);
+    }
+
+    private void SetBlocker()
+    {
+        TileData tile = TileUnderCursor();
+        if (tile == null) return;
+        if (tile.IsEmpty || tile.IsBlocker)
+        {
+            tile.MarkBlocker(!tile.IsBlocker);
+        }
     }
 
     public void ValidationPass(TileData tile)

@@ -14,6 +14,7 @@ public class TileVisuals : MonoBehaviour
     [SerializeField] private TextMeshPro label;
     [SerializeField] private Transform gearCW;
     [SerializeField] private Transform gearCCW;
+    [SerializeField] private Transform blocker;
     private Rotator cwRotator;
     private Rotator ccwRotator;
     
@@ -49,6 +50,14 @@ public class TileVisuals : MonoBehaviour
 
     public void SetVisuals()
     {
+        if (tileData.IsBlocker)
+        {
+            tokenMesh.gameObject.SetActive(false);
+        }
+        else
+        {
+            tokenMesh.gameObject.SetActive(true);
+        }
         // set locked mesh
         if (tileData.IsLocked)
         {
@@ -80,7 +89,17 @@ public class TileVisuals : MonoBehaviour
         }
 
         // Set Data Visuals
-        if (tileData.Value == 0 && !tileData.IsOnLoop)
+        if (tileData.IsBlocker)
+        {
+            visualContainer.SetActive(true);
+            gearCW.gameObject.SetActive(false);
+            gearCCW.gameObject.SetActive(false);
+            label.gameObject.SetActive(false);
+            blocker.gameObject.SetActive(true);
+
+            return;
+        }
+        else if (tileData.Value == 0 && !tileData.IsOnLoop)
         {
             visualContainer.SetActive(false);
             
@@ -92,6 +111,7 @@ public class TileVisuals : MonoBehaviour
             gearCW.gameObject.SetActive(false);
             gearCCW.gameObject.SetActive(false);
             label.gameObject.SetActive(false);
+            blocker.gameObject.SetActive(false);
 
             return;
         }
@@ -101,6 +121,7 @@ public class TileVisuals : MonoBehaviour
             gearCW.gameObject.SetActive(false);
             gearCCW.gameObject.SetActive(false);
             label.gameObject.SetActive(true);
+            blocker.gameObject.SetActive(false);
 
             label.color = SetColor(tileData.Value);
             label.text = tileData.Value.ToString();
@@ -112,6 +133,7 @@ public class TileVisuals : MonoBehaviour
             gearCW.gameObject.SetActive(true);
             gearCCW.gameObject.SetActive(false);
             label.gameObject.SetActive(false);
+            blocker.gameObject.SetActive(false);
 
             return;
         }
@@ -121,6 +143,7 @@ public class TileVisuals : MonoBehaviour
             gearCW.gameObject.SetActive(false);
             gearCCW.gameObject.SetActive(true);
             label.gameObject.SetActive(false);
+            blocker.gameObject.SetActive(false);
 
             return;
         }

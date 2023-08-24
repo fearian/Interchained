@@ -137,7 +137,7 @@ public class HexGrid
             {
                 if (_gridArray[x, y] != null)
                 {
-                    _gridArray[y, x].ClearTile();
+                    _gridArray[y, x].ClearTile(true);
                 }
             }
         }
@@ -153,8 +153,12 @@ public class HexGrid
                 {
                     // See Bit Cheat Sheet in SaveLoad.cs
                     _gridArray[x, y].SetValue(boardState[y, x] & 0b111111);
-                    if (((boardState[y, x] >> 7) & 0b1) == 1) _gridArray[x, y].MarkLocked(true);
                     if (((boardState[y, x] >> 6) & 0b1) == 1) _gridArray[x, y].ToggleIsLoop(true);
+                    if (((boardState[y, x] >> 7) & 0b1) == 1) _gridArray[x, y].MarkLocked(true);
+                    //if (((boardState[y, x] >> 8) & 0b1) == 1) _gridArray[x, y].MarkHidden(true);
+                    //Invalid tiles, when loaded, are not added to the tracking array for re-assesment!
+                    //if (((boardState[y, x] >> 9) & 0b1) == 1) _gridArray[x, y].MarkInvalid(true);
+                    if (((boardState[y, x] >> 10) & 0b1) == 1) _gridArray[x, y].MarkBlocker(true);
                 }
             }
         }
