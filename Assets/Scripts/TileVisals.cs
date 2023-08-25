@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using TMPro;
 using UnityEngine;
 
@@ -11,6 +12,8 @@ public class TileVisuals : MonoBehaviour
     [SerializeField] private GameObject visualContainer;
     [SerializeField] private MeshRenderer boardToken;
     private MeshFilter tokenMesh;
+    [SerializeField] private MeshRenderer pairMarker;
+    private Hex pairDirection;
     [SerializeField] private TextMeshPro label;
     [SerializeField] private Transform gearCW;
     [SerializeField] private Transform gearCCW;
@@ -48,8 +51,28 @@ public class TileVisuals : MonoBehaviour
         }
     }
 
+    private Hex GetPairedDirection()
+    {
+        if (tileData.IsPaired == false) return Hex.zero;
+
+        return tileData.hex - tileData.pairedTile.hex;
+    }
+
     public void SetVisuals()
     {
+        if (tileData.IsPaired)
+        {
+            pairMarker.gameObject.SetActive(true);
+            pairMarker.material.color = SetColor(tileData.Value);
+            int dir = Array.IndexOf(Hex.AXIAL_DIRECTIONS, GetPairedDirection());
+            tileData.dir = (dir % 6);
+            tileData.ApplyTransform();
+            //Debug.DrawLine(tileData.hex.ToWorld() + new Vector3(0,0,0.3f), tileData.pairedTile.hex.ToWorld(), Color.cyan, 1.5f);
+        }
+        else
+        {
+            pairMarker.gameObject.SetActive(false);
+        }
         if (tileData.IsBlocker)
         {
             tokenMesh.gameObject.SetActive(false);

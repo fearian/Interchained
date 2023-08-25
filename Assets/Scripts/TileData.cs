@@ -22,9 +22,11 @@ public class TileData : Node
     public bool IsLocked { get; private set; } = false;
     public bool IsHidden { get; private set; } = false;
     public BoardRegions region;  
+    public TileData pairedTile { get; private set; }
+    public bool IsPaired => pairedTile != null;
 
     public UnityEvent onValueChanged;
-    [FormerlySerializedAs("onStatusChanged")] public UnityEvent onLoopChanged;
+    public UnityEvent onLoopChanged;
 
     public int SetValue(int newValue)
     {
@@ -43,6 +45,40 @@ public class TileData : Node
     public override string ToString()
     {
         return Value.ToString();
+    }
+
+    public void SetPairedTile(TileData newPair)
+    {
+        Debug.Log($"New Pair! ({Value}) Pairing with ({newPair.Value})!");
+        pairedTile = newPair;
+
+        pairedTile.onValueChanged.AddListener(OnPairedTileValueChanged);
+        
+        onValueChanged.Invoke();
+    }
+
+    private bool IsPairValid()
+    {
+        if (pairedTile == null) return false;
+
+        bool thisIsOdd = (Value % 2 == 1);
+        if (thisIsOdd && pairedTile.Value == Value + 1) return true;
+        else if (!thisIsOdd && pairedTile.Value == Value - 1) return true;
+        else return false;
+    }
+
+    private void OnPairedTileValueChanged()
+    {
+        Debug.Log($"My pair({pairedTile}) changed vlaue!");
+        if (IsPairValid() == false)
+        {
+            pairedTile.onValueChanged.RemoveListener(OnPairedTileValueChanged);
+            Debug.Log($"I'm ({Value}). My pair changed to ({pairedTile.Value}). I hate them.");
+            Debug.DrawLine(hex.ToWorld() + new Vector3(0,0,-0.3f), pairedTile.hex.ToWorld(), Color.red, 1.5f);
+            pairedTile = null;
+            onValueChanged.Invoke();
+        }
+        
     }
 
     public void ToggleIsLoop()

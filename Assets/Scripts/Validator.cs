@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+using UnityEngine;
 
 public class Validator
 {
@@ -9,7 +10,36 @@ public class Validator
     {
         _hexGrid = hexGrid;
     }
-    
+
+    public IEnumerable<TileData> NeighboursCanPair(TileData tile)
+    {
+        int tileValue = tile.Value;
+        if (tileValue <= 0 || tileValue >= 7) yield break;
+
+        foreach (Hex neighbour in tile.hex.Neighbours())
+        {
+            if (!_hexGrid.ValidHexes.Contains(neighbour)) continue;
+
+            TileData otherTile = _hexGrid.GetTile(neighbour);
+            int neighbourValue = otherTile.Value;
+            if (neighbourValue <= 0 || neighbourValue >= 7) continue;
+
+            int smaller = Mathf.Min(tileValue, neighbourValue);
+            int larger = Mathf.Max(tileValue, neighbourValue);
+
+            if (smaller % 2 == 1 && larger == smaller + 1)
+            {
+                if (otherTile.IsPaired)
+                {
+                    Debug.Log($"Found potential pair, but is taken! ({neighbourValue} paired with {otherTile.pairedTile.Value})");
+                    continue;
+                }
+                Debug.Log($"Found a pair! ({tileValue} can pair with {neighbourValue})");
+                yield return otherTile;
+            }
+        }
+    }
+
     public IEnumerable<Hex> IsDuplicatedAlongAxis(Hex hex)
     {
         int i = 0;

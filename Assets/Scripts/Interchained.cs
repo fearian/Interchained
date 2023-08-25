@@ -160,7 +160,14 @@ public class Interchained : MonoBehaviour
         ReCheckInvalidTiles();
         
         // Validate numbers and gears
-        if (tile.IsNumber) ValidateBySudoku(tile.hex);
+        if (tile.IsNumber)
+        {
+            ValidateBySudoku(tile.hex);
+            if (tile.Value < 7)
+            {
+                CheckForPair(tile);
+            }
+        }
         else ValidateGear(tile.hex);
     }
 
@@ -267,6 +274,34 @@ public class Interchained : MonoBehaviour
         {
             invalidTiles.Remove(validHex);
         }
+    }
+
+    private void CheckForPair(TileData tile)
+    {
+        if (tile.IsPaired) return;
+        Debug.Log("Checking for pairs...");
+        var potentialPairs = _validator.NeighboursCanPair(tile);
+        if (potentialPairs.Count() <= 0)
+        {
+            Debug.Log("None found.");
+            return;
+        }
+        
+        TileData firstChoice = null;
+        TileData secondChoice = null;
+        foreach (TileData potentialPair in _validator.NeighboursCanPair(tile))
+        {
+            if (tile.IsOnLoop && potentialPair.IsOnLoop)
+            {
+                firstChoice = potentialPair;
+            }
+            else secondChoice = potentialPair;
+        }
+
+        if (firstChoice == null) firstChoice = secondChoice;
+
+        tile.SetPairedTile(firstChoice);
+        firstChoice.SetPairedTile(tile);
     }
 
     private void ValidateBySudoku(Hex hex)
