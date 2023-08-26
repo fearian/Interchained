@@ -24,6 +24,7 @@ public class TileData : Node
     public BoardRegions region;  
     public TileData pairedTile { get; private set; }
     public bool IsPaired => pairedTile != null;
+    public bool IsLowerOfPair => (IsPaired && Value % 2 == 1);
 
     public UnityEvent onValueChanged;
     public UnityEvent onLoopChanged;

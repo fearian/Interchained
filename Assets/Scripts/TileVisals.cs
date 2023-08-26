@@ -13,7 +13,7 @@ public class TileVisuals : MonoBehaviour
     [SerializeField] private MeshRenderer boardToken;
     private MeshFilter tokenMesh;
     [SerializeField] private MeshRenderer pairMarker;
-    private Hex pairDirection;
+    private MeshFilter pairMesh;
     [SerializeField] private TextMeshPro label;
     [SerializeField] private Transform gearCW;
     [SerializeField] private Transform gearCCW;
@@ -29,14 +29,10 @@ public class TileVisuals : MonoBehaviour
         cwRotator = gearCW.GetComponentInChildren<Rotator>();
         ccwRotator = gearCCW.GetComponentInChildren<Rotator>();
         tokenMesh = boardToken.GetComponent<MeshFilter>();
+        pairMesh = pairMarker.GetComponent<MeshFilter>();
 
         SetVisuals();
         SetLoopStatus();
-    }
-
-    private void Update()
-    {
-        SetVisuals();
     }
 
     private void SetLoopStatus()
@@ -60,19 +56,29 @@ public class TileVisuals : MonoBehaviour
 
     public void SetVisuals()
     {
-        if (tileData.IsPaired)
+        Debug.Log($"I am {((tileData.IsPaired) ? "Paired" : "Single")}. I am {tileData.Value} ({((tileData.Value % 2 == 1) ? "Odd" : "Even")}). I am the {((tileData.IsLowerOfPair) ? "Lower" : "Higher")} of the pair.");
+        if (tileData.IsPaired && tileData.IsLowerOfPair)
         {
+            pairMesh.mesh = boardColorPalette.pairMarker;
             pairMarker.gameObject.SetActive(true);
             pairMarker.material.color = SetColor(tileData.Value);
             int dir = Array.IndexOf(Hex.AXIAL_DIRECTIONS, GetPairedDirection());
-            tileData.dir = (dir % 6);
-            tileData.ApplyTransform();
+            //tileData.dir = (dir % 6);
+            pairMarker.transform.localRotation = Quaternion.Euler(-90, 0, -60f * dir);
+            //tileData.ApplyTransform();
             //Debug.DrawLine(tileData.hex.ToWorld() + new Vector3(0,0,0.3f), tileData.pairedTile.hex.ToWorld(), Color.cyan, 1.5f);
+        }
+        else if (tileData.Value == 7 && tileData.IsInvalid == false)
+        {
+            pairMesh.mesh = boardColorPalette.singleMarker;
+            pairMarker.gameObject.SetActive(true);
+            pairMarker.material.color = SetColor(tileData.Value);
         }
         else
         {
             pairMarker.gameObject.SetActive(false);
         }
+        
         if (tileData.IsBlocker)
         {
             tokenMesh.gameObject.SetActive(false);

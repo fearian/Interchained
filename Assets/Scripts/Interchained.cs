@@ -62,6 +62,9 @@ public class Interchained : MonoBehaviour
         if (Input.GetKeyUp(KeyCode.Alpha8) || Input.GetKeyUp(KeyCode.Keypad8)) SetTile(8);
         if (Input.GetKeyUp(KeyCode.Alpha9) || Input.GetKeyUp(KeyCode.Keypad9)) SetTile(9);
         
+        // "Swap" pair digits on a tile
+        if (Input.GetKeyDown(KeyCode.Space)) SwapTilePair();
+        
         // Clear tiles
         if (Input.GetKeyUp(KeyCode.Delete) || Input.GetKeyUp(KeyCode.Backspace)) ClearTile();
         
@@ -113,6 +116,28 @@ public class Interchained : MonoBehaviour
         //Debug.Log($"Tile ({hex.q},{hex.r}) value ({tile.Value}, {(tile.IsInvalid ? "Invalid" : "Valid")}), in region ({tile.region})");
     }
 
+    private void SwapTilePair()
+    {
+        TileData tile = TileUnderCursor();
+        if (tile == null) return;
+
+        if (tile.IsPaired)
+        {
+            bool tileWasLower = tile.IsLowerOfPair;
+            TileData pair = tile.pairedTile;
+            tile.SetValue( (tileWasLower) ? tile.Value + 1 : tile.Value - 1 );
+            pair.SetValue( (tileWasLower) ? pair.Value - 1 : pair.Value + 1 );
+            
+            ValidationPass(tile);
+        }
+        else if (tile.IsGear)
+        {
+            tile.SetValue((tile.Value == 8) ? 9 : 8);
+            
+            ValidationPass(tile);
+        }
+    }
+
     private void ClearTile()
     {
         TileData tile = TileUnderCursor();
@@ -156,6 +181,7 @@ public class Interchained : MonoBehaviour
 
     public void ValidationPass(TileData tile)
     {
+        if (tile == null) return;
         // Recheck previously invalid tiles, in case the recent change has fixed them
         ReCheckInvalidTiles();
         
@@ -173,6 +199,11 @@ public class Interchained : MonoBehaviour
 
     public void CheckBoard()
     {
+        foreach (TileData tile in hexGrid.GetGridArray())
+        {
+            ValidationPass(tile);
+        }
+        
         if (IsSolved())
         {
             Debug.Log("U WON!!!");
@@ -183,27 +214,7 @@ public class Interchained : MonoBehaviour
     public bool IsSolved()
     {
         if (invalidTiles.Count != 0) return false;
-        bool allValid = true;
-        foreach (Hex hex in hexGrid.ValidHexes)
-        {
-            if (hexGrid.GetTile(hex).IsEmpty) allValid = false;
-            var axis = _validator.IsDuplicatedAlongAxis(hex);
-            var region = _validator.IsDuplicatedInRegion(hex);
-            if (axis.Count() != 0 || region.Count() != 0)
-            {
-                allValid = false;
-                var combined = axis.Union(region);
-                foreach (Hex cell in combined)
-                {
-                    hexGrid.GetTile(cell).MarkInvalid(true);
-                    Debug.DrawLine(hex.ToWorld(), cell.ToWorld(), Color.red, 1f);
-                    invalidTiles.Add(cell);
-                }
-
-            }
-
-        }
-        return allValid;
+        else return true;
     }
 
     private void ReCheckIncorrectLoops()
@@ -373,6 +384,8 @@ public class Interchained : MonoBehaviour
         hexGrid.SetBoard(boardState);
         puzzleInfoField.text = "<b>" + boardState.Name + "</b>" + "\n" + boardState.Description;
         
+        CheckBoard();
+        
         onLevelLoaded.Invoke();
     }
 
@@ -392,6 +405,8 @@ public class Interchained : MonoBehaviour
         hexGrid.ClearBoard();
         hexGrid.SetBoard(boardState);
         puzzleInfoField.text = "<b>" + boardState.Name + "</b>" + "\n" + boardState.Description;
+
+        CheckBoard();
         
         onLevelLoaded.Invoke();
     }

@@ -27,6 +27,8 @@ MonoBehaviour:
   loopComplete: {r: 0.24719654, g: 0.9528302, b: 0.43594474, a: 0.77254903}
   tokenMesh: {fileID: -2165040118375620220, guid: dcd27400079b0084f8bc2b3c45db77dc, type: 3}
   tokenMeshLocked: {fileID: 1027344081185098428, guid: ee737b0166b2d8940bf7561989c48290, type: 3}
+  pairMarker: {fileID: -7373677637999994767, guid: 5543a1a0ebb320c4a881de17ad1e7ded, type: 3}
+  singleMarker: {fileID: -1584719777068901286, guid: cd505e2ea796c7c49a0047bf44c00967, type: 3}
   tokenMat: {fileID: 2100000, guid: 7ca6a171912f9824db55005aa0c59651, type: 2}
   invalidTokenMat: {fileID: 0}
   lockedTokenMat: {fileID: 0}

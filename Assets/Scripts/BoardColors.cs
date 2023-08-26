@@ -24,6 +24,8 @@ public class BoardColors : ScriptableObject
     [Header("Token Meshes")]
     public Mesh tokenMesh;
     public Mesh tokenMeshLocked;
+    public Mesh pairMarker;
+    public Mesh singleMarker;
 
     [Header("Material Instances")]
     public Material tokenMat;
