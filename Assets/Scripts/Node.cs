@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,6 +36,8 @@ public class Node : MonoBehaviour {
         transform.localRotation = Quaternion.Euler(0, -60f * dir, 0);
     }
 
+    public string msg = "";
+
     #if UNITY_EDITOR
     protected virtual void Update() {
         if (!Application.isPlaying) {
@@ -50,6 +53,14 @@ public class Node : MonoBehaviour {
     void OnDrawGizmosSelected() {
         UnityEditor.Handles.Label(transform.position, hex.ToString());
     }
-    #endif
+
+    private void OnDrawGizmos()
+    {
+        if (msg != "")
+        {
+            UnityEditor.Handles.Label(transform.position, msg);
+        }
+    }
+#endif
 
 }

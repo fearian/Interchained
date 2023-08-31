@@ -29,12 +29,6 @@ public class Validator
 
             if (smaller % 2 == 1 && larger == smaller + 1)
             {
-                if (otherTile.IsPaired)
-                {
-                    Debug.Log($"Found potential pair, but is taken! ({neighbourValue} paired with {otherTile.pairedTile.Value})");
-                    continue;
-                }
-                Debug.Log($"Found a pair! ({tileValue} can pair with {neighbourValue})");
                 yield return otherTile;
             }
         }
@@ -120,7 +114,7 @@ public class Validator
             if (!_hexGrid.ValidHexes.Contains(neighbour)) continue;
             
             TileData neighbouringTile = _hexGrid.GetTile(neighbour);
-            if (neighbouringTile.IsOnLoop == false) continue;
+            if (neighbouringTile.IsMarkedForLoop == false) continue;
             
             if (SidesTouchingLoop(neighbour) >= 3)
             {
@@ -142,10 +136,23 @@ public class Validator
             if (!_hexGrid.ValidHexes.Contains(neighbour)) continue;
             
             TileData neighbouringTile = _hexGrid.GetTile(neighbour);
-            if (neighbouringTile.IsOnLoop) i++;
+            if (neighbouringTile.IsMarkedForLoop) i++;
         }
 
         return i;
+    }
+
+    public IEnumerable<TileData> FindAdjacentLoops(TileData tile)
+    {
+        if (tile.region == 0) yield break;
+
+        foreach (Hex neighbour in tile.hex.Neighbours())
+        {
+            if (!_hexGrid.ValidHexes.Contains(neighbour)) continue;
+
+            TileData neighbouringTile = _hexGrid.GetTile(neighbour);
+            if (neighbouringTile.IsMarkedForLoop == true) yield return neighbouringTile;
+        }
     }
 
     public bool InvalidNumber(Hex hex)

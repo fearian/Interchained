@@ -41,7 +41,7 @@ public class SaveLoad : MonoBehaviour
                 else
                 {
                     _boardData[x, y] = tileData[y, x].Value;
-                    _boardData[x, y] |= (tileData[y, x].IsOnLoop ? 1 : 0) << 6;
+                    _boardData[x, y] |= (tileData[y, x].IsMarkedForLoop ? 1 : 0) << 6;
                     _boardData[x, y] |= (tileData[y, x].IsLocked ? 1 : 0) << 7;
                     _boardData[x, y] |= (tileData[y, x].IsHidden ? 1 : 0) << 8;
                     _boardData[x, y] |= (tileData[y, x].IsInvalid ? 1 : 0) << 9;

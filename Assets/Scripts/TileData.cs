@@ -17,14 +17,17 @@ public class TileData : Node
     public bool IsGear => Value is 8 or 9;
     public bool IsBlocker => Value is 10;
     public bool IsInvalid { get; private set; } = false;
-    public bool IsOnLoop { get; private set; } = false;
+    public bool IsMarkedForLoop { get; private set; } = false;
     public bool IsOnLoopIncorrectly { get; private set; } = false;
     public bool IsLocked { get; private set; } = false;
     public bool IsHidden { get; private set; } = false;
-    public BoardRegions region;  
-    public TileData pairedTile { get; private set; }
     public bool IsPaired => pairedTile != null;
     public bool IsLowerOfPair => (IsPaired && Value % 2 == 1);
+    public TileData pairedTile { get; private set; }
+    public BoardRegions region;  
+
+    public TileData LoopIn = null;
+    public TileData LoopOut = null;
 
     public UnityEvent onValueChanged;
     public UnityEvent onLoopChanged;
@@ -50,7 +53,6 @@ public class TileData : Node
 
     public void SetPairedTile(TileData newPair)
     {
-        Debug.Log($"New Pair! ({Value}) Pairing with ({newPair.Value})!");
         pairedTile = newPair;
 
         pairedTile.onValueChanged.AddListener(OnPairedTileValueChanged);
@@ -60,7 +62,7 @@ public class TileData : Node
 
     private bool IsPairValid()
     {
-        if (pairedTile == null) return false;
+        if (pairedTile == null || pairedTile.IsPaired == false) return false;
 
         bool thisIsOdd = (Value % 2 == 1);
         if (thisIsOdd && pairedTile.Value == Value + 1) return true;
@@ -70,28 +72,31 @@ public class TileData : Node
 
     private void OnPairedTileValueChanged()
     {
-        Debug.Log($"My pair({pairedTile}) changed vlaue!");
         if (IsPairValid() == false)
         {
             pairedTile.onValueChanged.RemoveListener(OnPairedTileValueChanged);
-            Debug.Log($"I'm ({Value}). My pair changed to ({pairedTile.Value}). I hate them.");
-            Debug.DrawLine(hex.ToWorld() + new Vector3(0,0,-0.3f), pairedTile.hex.ToWorld(), Color.red, 1.5f);
             pairedTile = null;
             onValueChanged.Invoke();
         }
-        
+    }
+
+    public void RemovePair()
+    {
+        pairedTile.onValueChanged.RemoveListener(OnPairedTileValueChanged);
+        pairedTile = null;
+        onValueChanged.Invoke();
     }
 
     public void ToggleIsLoop()
     {
-        IsOnLoop = !IsOnLoop;
+        IsMarkedForLoop = !IsMarkedForLoop;
 
         onValueChanged.Invoke();
         onLoopChanged.Invoke();
     }
     public void ToggleIsLoop(bool isLoop)
     {
-        IsOnLoop = isLoop;
+        IsMarkedForLoop = isLoop;
         
         onValueChanged.Invoke();
         onLoopChanged.Invoke();
@@ -111,6 +116,13 @@ public class TileData : Node
         }
     }
 
+    public void MarkLoopAsIncorrect(bool isIncorrect)
+    {
+        IsOnLoopIncorrectly = isIncorrect;
+        onLoopChanged.Invoke();
+        onValueChanged.Invoke();
+    }
+
     public void MarkLocked(bool isLocked)
     {
         if (IsEmpty)
@@ -128,7 +140,7 @@ public class TileData : Node
         {
             Value = 10;
             IsLocked = true;
-            IsOnLoop = false;
+            IsMarkedForLoop = false;
             IsInvalid = false;
             onValueChanged.Invoke();
             onLoopChanged.Invoke();
@@ -146,7 +158,10 @@ public class TileData : Node
             IsLocked = false;
             Value = 0;
         }
-        IsOnLoop = false;
+        IsMarkedForLoop = false;
+        IsOnLoopIncorrectly = false;
+        LoopIn = null;
+        LoopOut = null;
         IsInvalid = false;
         onValueChanged.Invoke();
         onLoopChanged.Invoke();
