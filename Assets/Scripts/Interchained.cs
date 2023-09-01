@@ -62,10 +62,10 @@ public class Interchained : MonoBehaviour
         // Place tiles 1-9
         if (Input.GetKeyUp(KeyCode.Alpha1) || Input.GetKeyUp(KeyCode.Keypad1)) SetTile(1);
         if (Input.GetKeyUp(KeyCode.Alpha2) || Input.GetKeyUp(KeyCode.Keypad2)) SetTile(2);
-        if (Input.GetKeyUp(KeyCode.Alpha3) || Input.GetKeyUp(KeyCode.Keypad3)) SetTile(3);
-        if (Input.GetKeyUp(KeyCode.Alpha4) || Input.GetKeyUp(KeyCode.Keypad4)) SetTile(4);
-        if (Input.GetKeyUp(KeyCode.Alpha5) || Input.GetKeyUp(KeyCode.Keypad5)) SetTile(5);
-        if (Input.GetKeyUp(KeyCode.Alpha6) || Input.GetKeyUp(KeyCode.Keypad6)) SetTile(6);
+        if (Input.GetKeyUp(KeyCode.Alpha3) || Input.GetKeyUp(KeyCode.Keypad3) || Input.GetKeyUp(KeyCode.A)) SetTile(3);
+        if (Input.GetKeyUp(KeyCode.Alpha4) || Input.GetKeyUp(KeyCode.Keypad4) || Input.GetKeyUp(KeyCode.B)) SetTile(4);
+        if (Input.GetKeyUp(KeyCode.Alpha5) || Input.GetKeyUp(KeyCode.Keypad5) || Input.GetKeyUp(KeyCode.X)) SetTile(5);
+        if (Input.GetKeyUp(KeyCode.Alpha6) || Input.GetKeyUp(KeyCode.Keypad6) || Input.GetKeyUp(KeyCode.Y)) SetTile(6);
         if (Input.GetKeyUp(KeyCode.Alpha7) || Input.GetKeyUp(KeyCode.Keypad7)) SetTile(7);
         if (Input.GetKeyUp(KeyCode.Alpha8) || Input.GetKeyUp(KeyCode.Keypad8)) SetTile(8);
         if (Input.GetKeyUp(KeyCode.Alpha9) || Input.GetKeyUp(KeyCode.Keypad9)) SetTile(9);
@@ -143,7 +143,10 @@ public class Interchained : MonoBehaviour
             TileData pair = tile.pairedTile;
             tile.SetValue( (tileWasLower) ? tile.Value + 1 : tile.Value - 1 );
             pair.SetValue( (tileWasLower) ? pair.Value - 1 : pair.Value + 1 );
-            ValidationPass(tile);
+            tile.SetPairedTile(pair);
+            pair.SetPairedTile(tile);
+            ValidationPass(tile, true, true, false, false);
+            ValidationPass(pair, true, true, false, false);
         }
         else if (tile.IsGear)
         {
@@ -209,15 +212,15 @@ public class Interchained : MonoBehaviour
 
     #region Validate Tile Data
 
-    public void ValidationPass(TileData tile, bool recheckInvalid = true)
+    public void ValidationPass(TileData tile, bool recheckInvalid = true, bool validatePlacement = true, bool assignPairs = true, bool validateLoop = true)
     {
         if (!(tile != null)) return;
         
         if (recheckInvalid) ReCheckInvalidTiles();
         
-        ValidatePlacement(tile);
-        AssignPairs(tile);
-        ValidateLoop(tile);
+        if (validatePlacement) ValidatePlacement(tile);
+        if (assignPairs) AssignPairs(tile);
+        if (validateLoop) ValidateLoop(tile);
         
         _loopDrawer.TryToDrawLoop(possibleLoop.ToArray());
 
