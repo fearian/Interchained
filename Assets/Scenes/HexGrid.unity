@@ -4066,7 +4066,7 @@ LineRenderer:
       key2: {r: 0.2588235, g: 1, b: 0.34945872, a: 0}
       key3: {r: 0.7170775, g: 1, b: 0.26274514, a: 0}
       key4: {r: 0.23921567, g: 1, b: 0.35178, a: 0}
-      key5: {r: 0.27058828, g: 1, b: 0.5416347, a: 0}
+      key5: {r: 0, g: 0, b: 0, a: 0}
       key6: {r: 0, g: 0, b: 0, a: 0}
       key7: {r: 0, g: 0, b: 0, a: 0}
       ctime0: 0
@@ -4074,7 +4074,7 @@ LineRenderer:
       ctime2: 32575
       ctime3: 48959
       ctime4: 65535
-      ctime5: 65150
+      ctime5: 0
       ctime6: 0
       ctime7: 0
       atime0: 0
@@ -4086,7 +4086,7 @@ LineRenderer:
       atime6: 0
       atime7: 0
       m_Mode: 2
-      m_ColorSpace: 0
+      m_ColorSpace: -1
       m_NumColorKeys: 5
       m_NumAlphaKeys: 2
     numCornerVertices: 3
@@ -5262,6 +5262,7 @@ GameObject:
   - component: {fileID: 1042517100}
   - component: {fileID: 1042517099}
   - component: {fileID: 1042517101}
+  - component: {fileID: 1042517102}
   m_Layer: 0
   m_Name: Hex Grid
   m_TagString: Untagged
@@ -5285,6 +5286,7 @@ MonoBehaviour:
   tileObject: {fileID: 4626923108524085825, guid: 2bcaa2fa4de2b4744bb2046ad87375d0, type: 3}
   boardColorPalette: {fileID: 11400000, guid: 5f9fadd7935af484b87e9287f4fb6d92, type: 2}
   saveLoadHandler: {fileID: 1042517101}
+  _longPressDetection: {fileID: 1042517102}
   _loopDrawer: {fileID: 190797772}
   puzzleInfoField: {fileID: 1045672835}
   createModeToggle: {fileID: 1715178609}
@@ -5296,7 +5298,6 @@ MonoBehaviour:
   onLevelLoaded:
     m_PersistentCalls:
       m_Calls: []
-  debuggingLogsOn: 1
 --- !u!4 &1042517100
 Transform:
   m_ObjectHideFlags: 0
@@ -5327,6 +5328,22 @@ MonoBehaviour:
   puzzleNameInput: {fileID: 715770424}
   jsonInputField: {fileID: 783376554}
   levelsList: {fileID: 11400000, guid: dcca6a9fbb4e1db47869c8e002722935, type: 2}
+--- !u!114 &1042517102
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1042517098}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1014ef068020462c9231c2fbe2ddf440, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  longPressDuration: 0.4
+  onLongPress:
+    m_PersistentCalls:
+      m_Calls: []
 --- !u!1 &1045672833
 GameObject:
   m_ObjectHideFlags: 0

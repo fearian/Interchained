@@ -142,7 +142,7 @@ public class Validator
         return i;
     }
 
-    public IEnumerable<TileData> FindAdjacentLoops(TileData tile)
+    public IEnumerable<TileData> FindAdjacent(TileData tile, TileData[] targets)
     {
         if (tile.region == 0) yield break;
 
@@ -151,7 +151,7 @@ public class Validator
             if (!_hexGrid.ValidHexes.Contains(neighbour)) continue;
 
             TileData neighbouringTile = _hexGrid.GetTile(neighbour);
-            if (neighbouringTile.IsMarkedForLoop == true) yield return neighbouringTile;
+            if (targets.Contains(neighbouringTile)) yield return neighbouringTile;
         }
     }
 

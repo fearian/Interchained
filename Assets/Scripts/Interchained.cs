@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,20 +7,19 @@ using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UIElements;
 using Toggle = UnityEngine.UI.Toggle;
+using static HexMsg;
 
 public class Interchained : MonoBehaviour
 {
     [SerializeField][Range(3,9)]
     private int size = 7;
-    [SerializeField]
-    private TileData tileObject;
+    [SerializeField] private TileData tileObject;
     [SerializeField] public BoardColors boardColorPalette;
-    [SerializeField]
-    private SaveLoad saveLoadHandler;
+    [SerializeField] private SaveLoad saveLoadHandler;
+    [SerializeField] private LongPressDetection _longPressDetection;
 
     private Validator _validator;
-    [SerializeField]
-    private LoopDrawer _loopDrawer;
+    [SerializeField] private LoopDrawer _loopDrawer;
     
     [SerializeField] private TextMeshProUGUI puzzleInfoField;
     [SerializeField] public Toggle createModeToggle;
@@ -42,6 +42,7 @@ public class Interchained : MonoBehaviour
         hexGrid = new HexGrid(size, tileObject);
         _validator = new Validator(hexGrid);
         _loopDrawer = _loopDrawer.Initialize(hexGrid);
+        _longPressDetection.onLongPress.AddListener(LongPressReaction);
     }
 
     private void Update()
@@ -52,11 +53,19 @@ public class Interchained : MonoBehaviour
 
     #region Player Input
     // Take hardware inputs
+    
+    private void LongPressReaction()
+    {
+        TileData tile = TileUnderCursor();
+        if (tile == null) return;
+        tile.loopParticles.Play();
+        MarkAsLoop();
+    }
 
     private void AcceptInput()
     {
         // Mouse input on tiles
-        if (Input.GetMouseButtonDown(0)) CycleValue(true);
+        if (_longPressDetection.isDetectingLongPress == false && Input.GetMouseButtonDown(0)) CycleValue(true);
         if (Input.GetMouseButtonDown(1)) CycleValue(false);
         
         // Place tiles 1-9
@@ -145,13 +154,17 @@ public class Interchained : MonoBehaviour
             pair.SetValue( (tileWasLower) ? pair.Value - 1 : pair.Value + 1 );
             tile.SetPairedTile(pair);
             pair.SetPairedTile(tile);
-            ValidationPass(tile, true, true, false, false);
-            ValidationPass(pair, true, true, false, false);
+            ValidationPass(tile, true, true, true, true);
+            ValidationPass(pair, true, true, true, true);
         }
         else if (tile.IsGear)
         {
             tile.SetValue((tile.Value == 8) ? 9 : 8);
             ValidationPass(tile);
+        }
+        else if (!tile.IsPaired)
+        {
+            ValidationPass(tile, false, false, true, true, true);
         }
         else return;
     }
@@ -187,7 +200,7 @@ public class Interchained : MonoBehaviour
         if (tile == null) return;
         tile.ToggleIsLoop();
 
-        ValidationPass(tile);
+        ValidationPass(tile, true, false, false, true);
     }
 
     private void ToggleLocked()
@@ -212,7 +225,8 @@ public class Interchained : MonoBehaviour
 
     #region Validate Tile Data
 
-    public void ValidationPass(TileData tile, bool recheckInvalid = true, bool validatePlacement = true, bool assignPairs = true, bool validateLoop = true)
+    public void ValidationPass(TileData tile, bool recheckInvalid = true, bool validatePlacement = true, 
+        bool assignPairs = true, bool validateLoop = true, bool redrawLoop = true)
     {
         if (!(tile != null)) return;
         
@@ -222,7 +236,7 @@ public class Interchained : MonoBehaviour
         if (assignPairs) AssignPairs(tile);
         if (validateLoop) ValidateLoop(tile);
         
-        _loopDrawer.TryToDrawLoop(possibleLoop.ToArray());
+        if(redrawLoop) _loopDrawer.TryToDrawLoop(possibleLoop.ToArray(), tile);
 
         return;
         
@@ -241,8 +255,12 @@ public class Interchained : MonoBehaviour
         void ValidateLoop(TileData tile)
         {
             ReCheckIncorrectLoops();
-            
-            if (tile.IsMarkedForLoop) ValidateIsOnLoop(tile);
+
+            if (tile.IsMarkedForLoop)
+            {
+                ValidateIsOnLoop(tile);
+                if (tile.IsPaired && tile.pairedTile.IsMarkedForLoop) ValidateIsOnLoop(tile.pairedTile);
+            }
         }
     }
     
@@ -360,16 +378,17 @@ public class Interchained : MonoBehaviour
 
     #region validate Tile Loop Status
 
-    private void ValidateIsOnLoop(TileData tile, bool msg = true)
+    private void ValidateIsOnLoop(TileData tile)
     {
-        if (msg) ClearMsg(tile.hex);
+        bool msg = true;
+        //if (msg) ClearMsg(tile.hex);
         if (!(tile != null)) return;
 
         if (!tile.IsPaired || tile.IsInvalid || tile.IsEmpty)
         {
             if (msg) AddMsg(tile.hex, $"{((tile.IsPaired) ? "paired" : "")}" +
                                       $"{((tile.IsInvalid) ? "invalid" : "")}" +
-                                      $"{((tile.IsEmpty) ? "empty" : "")}/Xloop", false);
+                                      $"{((tile.IsEmpty) ? "empty" : "")}(X)");
             tile.MarkLoopAsIncorrect(true);
             if (invalidLoopTiles.Contains(tile.hex) == false) invalidLoopTiles.Add(tile.hex);
             if (possibleLoop.Contains(tile)) possibleLoop.Remove(tile);
@@ -379,25 +398,20 @@ public class Interchained : MonoBehaviour
 
         foreach (Hex hex in touchesLoopIncorrectly)
         {
-            if (msg) AddMsg(tile.hex, $"touching/XLoop", true);
+            if (msg) AddMsg(tile.hex, $"touching(X)", true);
             hexGrid.GetTile(hex).MarkLoopAsIncorrect(true);
             if (invalidLoopTiles.Contains(hex) == false) invalidLoopTiles.Add(hex);
             if (possibleLoop.Contains(tile)) possibleLoop.Remove(tile);
             Debug.DrawLine(tile.hex.ToWorld(), hex.ToWorld(), Color.red, 1f);
         }
-
-        if (tile.IsOnLoopIncorrectly)
+        
+        if (invalidLoopTiles.Contains(tile.hex) == false)
         {
-            if (msg) AddMsg(tile.hex, $"No Loop", true);
-            if (invalidLoopTiles.Contains(tile.hex) == false) invalidLoopTiles.Add(tile.hex);
-            if (possibleLoop.Contains(tile) == true) possibleLoop.Remove(tile);
-        }
-        /*if (!tile.IsOnLoopIncorrectly)
-        {
-            if (msg) AddMsg(tile.hex, $"Good Loop", true);
+            if (msg) AddMsg(tile.hex, $"(O)", true);
+            tile.MarkLoopAsIncorrect(false);
             if (invalidLoopTiles.Contains(tile.hex) == true) invalidLoopTiles.Remove(tile.hex);
-            if (possibleLoop.Contains(tile) == false) possibleLoop.Add(tile);
-        }*/
+            if (possibleLoop.Contains(tile) == false) possibleLoop.Add(tile);//???
+        }
     }
     
     
@@ -517,6 +531,7 @@ public class Interchained : MonoBehaviour
         {
             if (tile != null) ValidationPass(tile, false);
         }
+        _loopDrawer.TryToDrawLoop(possibleLoop.ToArray());
         
         if (IsSolved())
         {
@@ -601,13 +616,13 @@ public class Interchained : MonoBehaviour
 
     private void ClearGameState()
     {
+        _loopDrawer.ClearLoop();
         invalidLoopTiles.Clear();
         invalidLoopTiles = new List<Hex>();
         invalidTiles.Clear();
         invalidTiles = new List<Hex>();
         possibleLoop.Clear();
         possibleLoop = new List<TileData>();
-        _loopDrawer.ClearLoop();
         ClearMsg();
         hexGrid.ClearBoard();
     }
@@ -630,12 +645,10 @@ public class Interchained : MonoBehaviour
     #endregion
 
     #region Debugging Logs
-
-    [SerializeField] private bool debuggingLogsOn = false;
-
+    #if UNITY_EDITOR
+    
     private void LogTileStatus(TileData tile, bool logValue = true, bool logPair = false, bool logLoop = false, bool LogGear = false)
     {
-        if (debuggingLogsOn == false) return;
         string message = $"<b><color=green>Tile Status:</b></color> ({tile.hex.q},{tile.hex.r}) \n";
         if (logValue) message += $"value ({tile.Value}, {(tile.IsInvalid ? "Invalid" : "Valid")}), in region ({tile.region}) \n";
         if (logPair) message += $"Tile is {((tile.IsPaired) ? "Paired" : "Single")}. I am the {((tile.IsLowerOfPair) ? "Lower" : "Higher")} of the pair.";
@@ -644,9 +657,21 @@ public class Interchained : MonoBehaviour
         Debug.Log(message);
     }
 
-    private Dictionary<Hex, string> _tileMsg = new Dictionary<Hex, string>();
+    private void OnDrawGizmos()
+    {
+        DrawMsg();
+    }
+    
+    #endif
+    #endregion
+}
 
-    private void AddMsg(Hex hex, string msg, bool additive = false)
+public static class HexMsg
+{
+    public static Dictionary<Hex, string> _tileMsg = new Dictionary<Hex, string>();
+    private static GUIStyle msgStyle = new GUIStyle();
+
+    public static void AddMsg(Hex hex, string msg, bool additive = false)
     {
         if (_tileMsg.ContainsKey(hex))
         {
@@ -659,7 +684,7 @@ public class Interchained : MonoBehaviour
         }
     }
 
-    private void ClearMsg(Hex hex)
+    public static void ClearMsg(Hex hex)
     {
         if (_tileMsg.ContainsKey(hex))
         {
@@ -667,16 +692,13 @@ public class Interchained : MonoBehaviour
         }
     }
 
-    private void ClearMsg()
+    public static void ClearMsg()
     {
         _tileMsg.Clear();
     }
 
     #if UNITY_EDITOR
-
-    private GUIStyle msgStyle = new GUIStyle();
-    
-    void OnDrawGizmos()
+    public static void DrawMsg()
     {
         msgStyle.fontSize = 18;
         msgStyle.richText = true;
@@ -688,9 +710,6 @@ public class Interchained : MonoBehaviour
             UnityEditor.Handles.Label(msg.Key.ToWorld() + new Vector3(0,0,0.25f), msg.Value, msgStyle);
         }
     }
-
     #endif
 
-
-    #endregion
 }

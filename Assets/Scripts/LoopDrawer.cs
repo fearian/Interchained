@@ -2,12 +2,16 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.CompilerServices;
+using Unity.VisualScripting;
 using UnityEngine;
+using static HexMsg;
 
 public class LoopDrawer : MonoBehaviour
 {
     private Validator _validator;
     private HexGrid _board = null;
+    private TileData[] possibleLoopTiles;
 
     [SerializeField] private LineRenderer LineRenderer;
 
@@ -29,6 +33,8 @@ public class LoopDrawer : MonoBehaviour
             if (tile.IsInvalid || !tile.IsPaired || !tile.IsNumber || tile.IsOnLoopIncorrectly) return false;
         }
 
+        possibleLoopTiles = loopTiles;
+
         return true;
     }
 
@@ -37,60 +43,93 @@ public class LoopDrawer : MonoBehaviour
         ClearLoop();
         if (EvaluateLoopTiles(loopTiles) == false) return;
         if (loopTiles.Length < 4) return;
+
+        bool msg = true;
+        if (msg) ClearMsg();
         
-        
-        
-        //LineRenderer.positionCount = loopTiles.Length;
         
         TileData currentTile = startingTile;
-        if (startingTile == null)
+        if (startingTile == null || startingTile.IsOnLoopIncorrectly)
         {
             currentTile = loopTiles[0];
+            startingTile = currentTile;
         }
+        
+        if (msg) AddMsg(startingTile.hex, "Start:");
 
         int step = 0;
-        Debug.Log("Begin Loop Stepping");
-        while (step < loopTiles.Length)
+        while (step < loopTiles.Length + 1)
         {
-            var validSteps = _validator.FindAdjacentLoops(currentTile);
+            TileData[] steps = new TileData[2];
+            var validSteps = _validator.FindAdjacent(currentTile, possibleLoopTiles);
             if (validSteps.Count() != 2)
             {
-                Debug.Log("found !2 adjacent Loops :((");
+                if (msg) AddMsg(currentTile.hex, "!2 steps", true);
+                break;
+            }
+            else
+            {
+                steps = validSteps.ToArray();
+                if (msg) AddMsg(currentTile.hex, "good", true);
+            }
+
+            if (steps[0] == null || steps[1] == null)
+            {
+                Debug.LogWarning("found 2 valid steps for the loop, but ended up as null in array?");
                 break;
             }
 
-            Debug.Log("found 2 adjacent Loops");
-
-            foreach (TileData validStep in validSteps)
+            if (currentTile.LoopIn == null)
             {
-                if (!loopTiles.Contains(validStep)) continue;
-                if (currentTile.LoopIn == null) currentTile.LoopIn = validStep;
-                if (currentTile.LoopIn != validStep)
+                currentTile.LoopIn = steps[0];
+                AddMsg(currentTile.LoopIn.hex, "in", true);
+                currentTile.LoopOut = steps[1];
+                AddMsg(currentTile.LoopOut.hex, "out", true);
+            }
+            else
+            {
+                foreach (TileData tile in steps)
                 {
-                    currentTile.LoopOut = validStep;
-                    validStep.LoopIn = currentTile;
+                    if (currentTile.LoopIn == tile) continue;
+                    else
+                    {
+                        currentTile.LoopOut = tile;
+                        AddMsg(currentTile.LoopOut.hex, "out", true);
+                        tile.LoopIn = currentTile;
+                        AddMsg(tile.LoopIn.hex, "in", true);
+                    }
                 }
             }
 
             if (currentTile.LoopOut != null)
             {
-                Debug.DrawLine(currentTile.hex.ToWorld(), currentTile.LoopOut.hex.ToWorld(), Color.blue, 1f);
-                if (currentTile.LoopIn != null) Debug.DrawLine(currentTile.LoopIn.hex.ToWorld(), currentTile.hex.ToWorld(), Color.blue, 1f);
+                Debug.DrawLine(currentTile.hex.ToWorld() + new Vector3(0,0,0.25f), currentTile.LoopOut.hex.ToWorld(), Color.blue, 6f);
+                Debug.DrawLine(currentTile.LoopIn.hex.ToWorld(), currentTile.hex.ToWorld(), Color.red, 6f);
                 
                 currentTile = currentTile.LoopOut;
                 step++;
-                
+                if (msg) AddMsg(currentTile.hex, $"step {step}", true);
             }
             else break;
         }
 
-        if (step == loopTiles.Length)
+        if (step == loopTiles.Length + 1)
         {
-            //LineRenderer.loop = true;
+            if (msg) AddMsg(currentTile.hex, $"loop @ {step}", true);
+            if (currentTile.LoopOut == startingTile) DrawLoop(true);
+            else DrawLoop(false);
+        }
+        else return;
+
+        void DrawLoop(bool isClosed = false)
+        {
+            Debug.Log($"Step@{step}, LoopTiles@{loopTiles.Length}, Drawing loop!");
+            LineRenderer.positionCount = loopTiles.Length;
+            LineRenderer.loop = isClosed;
             for (int i = 0; i < loopTiles.Length; i++)
             {
-                //LineRenderer.SetPosition(i, currentTile.hex.ToWorld(0.125f));
-                currentTile = currentTile.LoopOut;
+                LineRenderer.SetPosition(i, currentTile.hex.ToWorld(0.125f));
+                currentTile = currentTile.LoopIn;
             }
         }
         
@@ -106,6 +145,7 @@ public class LoopDrawer : MonoBehaviour
 
     public void ClearLoop()
     {
+        Debug.Log("Clearing Loop");
         LineRenderer.positionCount = 0;
     }
 }

@@ -31,6 +31,8 @@ public class TileData : Node
 
     public UnityEvent onValueChanged;
     public UnityEvent onLoopChanged;
+    
+    [SerializeField] public ParticleSystem loopParticles;
 
     public int SetValue(int newValue)
     {
@@ -90,6 +92,12 @@ public class TileData : Node
     public void ToggleIsLoop()
     {
         IsMarkedForLoop = !IsMarkedForLoop;
+
+        if (!IsMarkedForLoop)
+        {
+            LoopIn = null;
+            LoopOut = null;
+        }
 
         onValueChanged.Invoke();
         onLoopChanged.Invoke();

@@ -77,6 +77,7 @@ public class HexGrid
         Vector3 pos = hex.ToWorld();
         
         TileData tile = GameObject.Instantiate<TileData>(_tileObject, pos, Quaternion.Euler(0,0,0), null);
+        tile.name = $"Tile {tile.hex}";
         tile.region = GetRegion(hex);
         return tile;
     }
