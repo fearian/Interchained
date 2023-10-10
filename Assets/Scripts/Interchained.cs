@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.UIElements;
@@ -304,6 +305,7 @@ public class Interchained : MonoBehaviour
         foreach (Hex validHex in markedAsValid)
         {
             invalidTiles.Remove(validHex);
+            ValidateIsOnLoop(hexGrid.GetTile(validHex));
         }
     }
 
@@ -380,9 +382,21 @@ public class Interchained : MonoBehaviour
 
     private void ValidateIsOnLoop(TileData tile)
     {
-        bool msg = true;
-        //if (msg) ClearMsg(tile.hex);
         if (!(tile != null)) return;
+        
+        bool msg = true;
+        if (msg) ClearMsg(tile.hex);
+        if (msg) AddMsg(tile.hex, "check.", true);
+
+        bool passedChecks = true;
+
+        if (!tile.IsMarkedForLoop)
+        {
+            if (possibleLoop.Contains(tile)) possibleLoop.Remove(tile);
+            if (invalidLoopTiles.Contains(tile.hex) == true) invalidLoopTiles.Remove(tile.hex);
+            if (msg) AddMsg(tile.hex, $"Not Loop!");
+            Debug.LogWarning($"{tile} Validated for loop, but is not marked as loop!");
+        }
 
         if (!tile.IsPaired || tile.IsInvalid || tile.IsEmpty)
         {
@@ -392,6 +406,7 @@ public class Interchained : MonoBehaviour
             tile.MarkLoopAsIncorrect(true);
             if (invalidLoopTiles.Contains(tile.hex) == false) invalidLoopTiles.Add(tile.hex);
             if (possibleLoop.Contains(tile)) possibleLoop.Remove(tile);
+            passedChecks = false;
         }
         
         var touchesLoopIncorrectly = _validator.IsTouchingLoopIncorrectly(tile.hex);
@@ -402,15 +417,16 @@ public class Interchained : MonoBehaviour
             hexGrid.GetTile(hex).MarkLoopAsIncorrect(true);
             if (invalidLoopTiles.Contains(hex) == false) invalidLoopTiles.Add(hex);
             if (possibleLoop.Contains(tile)) possibleLoop.Remove(tile);
+            passedChecks = false;
             Debug.DrawLine(tile.hex.ToWorld(), hex.ToWorld(), Color.red, 1f);
         }
         
-        if (invalidLoopTiles.Contains(tile.hex) == false)
+        if (passedChecks)
         {
             if (msg) AddMsg(tile.hex, $"(O)", true);
             tile.MarkLoopAsIncorrect(false);
             if (invalidLoopTiles.Contains(tile.hex) == true) invalidLoopTiles.Remove(tile.hex);
-            if (possibleLoop.Contains(tile) == false) possibleLoop.Add(tile);//???
+            if (possibleLoop.Contains(tile) == false) possibleLoop.Add(tile);
         }
     }
     

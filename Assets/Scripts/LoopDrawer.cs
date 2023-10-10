@@ -42,9 +42,9 @@ public class LoopDrawer : MonoBehaviour
     {
         ClearLoop();
         if (EvaluateLoopTiles(loopTiles) == false) return;
-        if (loopTiles.Length < 4) return;
+        if (loopTiles.Length < 2) return;
 
-        bool msg = true;
+        bool msg = false;
         if (msg) ClearMsg();
         
         
