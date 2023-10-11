@@ -103,8 +103,8 @@ public class LoopDrawer : MonoBehaviour
 
             if (currentTile.LoopOut != null)
             {
-                Debug.DrawLine(currentTile.hex.ToWorld() + new Vector3(0,0,0.25f), currentTile.LoopOut.hex.ToWorld(), Color.blue, 6f);
-                Debug.DrawLine(currentTile.LoopIn.hex.ToWorld(), currentTile.hex.ToWorld(), Color.red, 6f);
+                Debug.DrawLine(currentTile.hex.ToWorld(), currentTile.LoopOut.hex.ToWorld() + new Vector3(0.1f,0,0.1f), Color.blue, 15f);
+                Debug.DrawLine(currentTile.LoopIn.hex.ToWorld() + new Vector3(0.1f,0,-0.1f), currentTile.hex.ToWorld(), Color.red, 15f);
                 
                 currentTile = currentTile.LoopOut;
                 step++;
