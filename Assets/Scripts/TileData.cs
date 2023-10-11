@@ -11,23 +11,27 @@ public static class Constants
 
 public class TileData : Node
 {
+    public BoardRegions region;  
     public int Value { get; private set; } = 0;
     public bool IsEmpty => (Value == 0);
     public bool IsNumber => Value is >= 1 and <= 7;
     public bool IsGear => Value is 8 or 9;
     public bool IsBlocker => Value is 10;
     public bool IsInvalid { get; private set; } = false;
-    public bool IsMarkedForLoop { get; private set; } = false;
-    public bool IsOnLoopIncorrectly { get; private set; } = false;
     public bool IsLocked { get; private set; } = false;
     public bool IsHidden { get; private set; } = false;
-    public bool IsPaired => pairedTile != null;
-    public bool IsLowerOfPair => (IsPaired && Value % 2 == 1);
-    public TileData pairedTile { get; private set; }
-    public BoardRegions region;  
-
+    
+    //Loop
+    public bool IsMarkedForLoop { get; private set; } = false;
     public TileData LoopIn = null;
     public TileData LoopOut = null;
+    //public bool IsOnLoopIncorrectly { get; private set; } = false;
+    
+    //Pairs
+    public TileData pairedTile { get; private set; }
+    public bool IsPaired => pairedTile != null;
+    public bool IsLowerOfPair => (IsPaired && Value % 2 == 1);
+
 
     public UnityEvent onValueChanged;
     public UnityEvent onLoopChanged;
@@ -89,46 +93,36 @@ public class TileData : Node
         onValueChanged.Invoke();
     }
 
-    public void ToggleIsLoop()
+    public void MarkForLoop(bool isLoop)
     {
-        IsMarkedForLoop = !IsMarkedForLoop;
-
+        IsMarkedForLoop = isLoop;
+        
         if (!IsMarkedForLoop)
         {
             LoopIn = null;
             LoopOut = null;
         }
-
-        onValueChanged.Invoke();
-        onLoopChanged.Invoke();
-    }
-    public void ToggleIsLoop(bool isLoop)
-    {
-        IsMarkedForLoop = isLoop;
         
         onValueChanged.Invoke();
         onLoopChanged.Invoke();
     }
-
-    public void MarkInvalid(bool isInvalid, bool regardingLoop = false)
+    
+    public void ToggleIsLoop()
     {
-        if (regardingLoop)
-        {
-            IsOnLoopIncorrectly = isInvalid;
-            onLoopChanged.Invoke();
-        }
-        else
-        {
-            IsInvalid = isInvalid;
-            onValueChanged.Invoke();
-        }
+        MarkForLoop(!IsMarkedForLoop);
     }
 
-    public void MarkLoopAsIncorrect(bool isIncorrect)
+    public void MarkAsInvalid(bool isInvalid = true)
     {
-        IsOnLoopIncorrectly = isIncorrect;
-        onLoopChanged.Invoke();
+        IsInvalid = isInvalid;
         onValueChanged.Invoke();
+        if (IsMarkedForLoop) onLoopChanged.Invoke();
+    }
+    public void MarkAsValid(bool isValid = true)
+    {
+        IsInvalid = !isValid;
+        onValueChanged.Invoke();
+        if (IsMarkedForLoop) onLoopChanged.Invoke();
     }
 
     public void MarkLocked(bool isLocked)
@@ -167,7 +161,6 @@ public class TileData : Node
             Value = 0;
         }
         IsMarkedForLoop = false;
-        IsOnLoopIncorrectly = false;
         LoopIn = null;
         LoopOut = null;
         IsInvalid = false;

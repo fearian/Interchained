@@ -14,8 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   one: 1
   two: 2
-  three: A
-  four: B
-  five: X
-  six: Y
+  three: 3
+  four: 4
+  five: 5
+  six: 6
   seven: 7

@@ -38,7 +38,7 @@ public class TileVisuals : MonoBehaviour
 
     private void SetLoopStatus()
     {
-        if (tileData.IsOnLoopIncorrectly)
+        if (tileData.IsMarkedForLoop && tileData.IsInvalid)
         {
             boardToken.transform.localScale = new Vector3(0.6f, 0.6f, 0.6f);
         }

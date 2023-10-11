@@ -33,8 +33,8 @@ public class Interchained : MonoBehaviour
 
     private HexGrid hexGrid;
 
-    private List<Hex> invalidTiles = new List<Hex>();
-    private List<Hex> invalidLoopTiles = new List<Hex>();
+    private List<TileData> invalidTiles = new List<TileData>();
+    //private List<Hex> invalidLoopTiles = new List<Hex>();
     private List<TileData> possibleLoop = new List<TileData>();
 
     private Vector3 mousePos;
@@ -142,6 +142,7 @@ public class Interchained : MonoBehaviour
         ValidationPass(tile);
     }
 
+    // TODO: revisit
     private void SwapTilePair()
     {
         TileData tile = TileUnderCursor();
@@ -175,34 +176,35 @@ public class Interchained : MonoBehaviour
         TileData tile = TileUnderCursor();
         if (tile == null) return;
 
-        TileData pairedHack = null;
-        if (tile.IsEmpty) tile.ToggleIsLoop(false);
+        // validate a potential pair that misses it's partner being deleted
+        TileData pairedTile = null;
+        
+        ClearMsg(tile.hex);
+
+        if (tile.IsEmpty && tile.IsMarkedForLoop) tile.MarkForLoop(false);
         else
         {
-            if (tile.IsPaired)
-            {
-                pairedHack = tile.pairedTile;
-            }
+            if (tile.IsPaired) pairedTile = tile.pairedTile;
+            
             tile.SetValue(0);
         }
-        
+
         ValidationPass(tile);
-        
-        if (pairedHack != null) ValidationPass(pairedHack);
+        if (pairedTile != null) ValidationPass(pairedTile);
     }
     
-    #endregion
-
-    #region Change Tile Status
-    // Mark as on the loop, lock the tile, set as a blocker
-
     private void MarkAsLoop(){
         TileData tile = TileUnderCursor();
         if (tile == null) return;
         tile.ToggleIsLoop();
 
-        ValidationPass(tile, true, false, false, true);
+        ValidationPass(tile);
     }
+    
+    #endregion
+
+    #region Change Tile Status
+    // Lock the tile, set as a blocker
 
     private void ToggleLocked()
     {
@@ -237,15 +239,44 @@ public class Interchained : MonoBehaviour
         if (assignPairs) AssignPairs(tile);
         if (validateLoop) ValidateLoop(tile);
         
-        if(redrawLoop) _loopDrawer.TryToDrawLoop(possibleLoop.ToArray(), tile);
+        if (redrawLoop) _loopDrawer.TryToDrawLoop(possibleLoop.ToArray(), tile);
 
         return;
         
         void ValidatePlacement(TileData tile)
         {
-            if (tile.Value == 0) tile.MarkInvalid(false);
-            else if (tile.IsNumber) ValidateBySudoku(tile.hex);
-            else if (tile.IsGear) ValidateGear(tile.hex);
+            if (tile.IsEmpty)
+            {
+                tile.MarkAsValid();
+            }
+            else if (tile.IsNumber)
+            {
+                // Validate By Sudoku
+                var axis = _validator.IsDuplicatedAlongAxis(tile);
+                var region = _validator.IsDuplicatedInRegion(tile);
+
+                var combined = axis.Union(region);
+                foreach (var invalidTile in combined)
+                {
+                    invalidTile.MarkAsInvalid(true);
+                    Debug.DrawLine(tile.hex.ToWorld(), invalidTile.hex.ToWorld(), Color.red, 1f);
+                    invalidTiles.Add(invalidTile);
+                }
+            }
+            else if (tile.IsGear)
+            {
+                // Validate by Adjacent
+                var neighbours = _validator.GearIsStuckOnGear(tile);
+                var region = _validator.IsDuplicatedInRegion(tile);
+
+                var combined = neighbours.Union(region);
+                foreach (var invalidTile in combined)
+                {
+                    invalidTile.MarkAsInvalid(true);
+                    Debug.DrawLine(tile.hex.ToWorld(), invalidTile.hex.ToWorld(), Color.red, 1f);
+                    invalidTiles.Add(invalidTile);
+                }
+            }
         }
 
         void AssignPairs(TileData tile)
@@ -255,8 +286,8 @@ public class Interchained : MonoBehaviour
 
         void ValidateLoop(TileData tile)
         {
-            ReCheckIncorrectLoops();
-
+            //TODO: Recheck incorrect loops
+            
             if (tile.IsMarkedForLoop)
             {
                 ValidateIsOnLoop(tile);
@@ -270,113 +301,49 @@ public class Interchained : MonoBehaviour
     {
         if (invalidTiles.Count == 0) return;
         
-        TileData tile;
-        List<Hex> markedAsValid = new List<Hex>();
+        List<TileData> testingTilesForLoop = new List<TileData>();
         
-        foreach (Hex hex in invalidTiles)
+        // test tile placement
+        foreach (var tile in invalidTiles)
         {
-            tile = hexGrid.GetTile(hex);
-
             if (tile.IsEmpty)
             {
-                markedAsValid.Add(hex);
-                tile.MarkInvalid(false);
+                testingTilesForLoop.Add(tile);
             }
             
             if (tile.IsNumber)
             {
-                if (!_validator.InvalidNumber(hex))
+                if (_validator.InvalidNumber(tile) == false)
                 {
-                    markedAsValid.Add(hex);
-                    tile.MarkInvalid(false);
+                    testingTilesForLoop.Add(tile);
                 }
             }
             else if (tile.IsGear)
             {
-                if (!_validator.InvalidGear(hex))
+                if (_validator.InvalidGear(tile) == false)
                 {
-                    markedAsValid.Add(hex);
-                    tile.MarkInvalid(false);
-                    //Debug.Log("Happily marking gear as now valid");
+                    testingTilesForLoop.Add(tile);
                 }
             }
+            
         }
 
-        foreach (Hex validHex in markedAsValid)
+        foreach (var testTile in testingTilesForLoop)
         {
-            invalidTiles.Remove(validHex);
-            ValidateIsOnLoop(hexGrid.GetTile(validHex));
-        }
-    }
-
-    private void ReCheckIncorrectLoops()
-    {
-        if (invalidLoopTiles.Count == 0) return;
-
-        TileData tile;
-        List<Hex> markOkay = new List<Hex>();
-
-        foreach (Hex hex in invalidLoopTiles)
-        {
-            tile = hexGrid.GetTile(hex);
-
-            if (!tile.IsMarkedForLoop || tile.IsPaired)
+            // release any so-far valid tile not on loop
+            if (testTile.IsMarkedForLoop == false)
             {
-                markOkay.Add(hex);
-                tile.MarkInvalid(false, true);
+                testTile.MarkAsValid();
+                invalidTiles.Remove(testTile);
             }
-            else
+            // test if a tile is on loop correctly
+            else if (_validator.InvalidLoop(testTile) == false)
             {
-                int sidesTouchingLoop = _validator.SidesTouchingLoop(hex);
-                //Debug.Log($"{tile.hex} IsOnLoop:{tile.IsMarkedForLoop}, touching {sidesTouchingLoop} other loop tiles.");
-                if (sidesTouchingLoop < 3 && tile.IsPaired)
-                {
-                    markOkay.Add(hex);
-                    tile.MarkInvalid(false, true);
-                }
+                testTile.MarkAsValid();
+                invalidTiles.Remove(testTile);
             }
         }
-
-        foreach (Hex validLoop in markOkay)
-        {
-            invalidLoopTiles.Remove(validLoop);
-        }
     }
-    
-    #region Validate Tile Values
-    
-
-    private void ValidateBySudoku(Hex hex)
-    {
-        var axis = _validator.IsDuplicatedAlongAxis(hex);
-        var region = _validator.IsDuplicatedInRegion(hex);
-
-        var combined = axis.Union(region);
-        foreach (Hex cell in combined)
-        {
-            hexGrid.GetTile(cell).MarkInvalid(true);
-            Debug.DrawLine(hex.ToWorld(), cell.ToWorld(), Color.red, 1f);
-            invalidTiles.Add(cell);
-        }
-    }
-
-    private void ValidateGear(Hex hex)
-    {
-        if (hexGrid.GetTile(hex).IsNumber) return;
-
-        var neighbours = _validator.GearIsStuckOnGear(hex);
-        var region = _validator.IsDuplicatedInRegion(hex);
-
-        var combined = neighbours.Union(region);
-        foreach (Hex cell in combined)
-        {
-            hexGrid.GetTile(cell).MarkInvalid(true);
-            Debug.DrawLine(hex.ToWorld(), cell.ToWorld(), Color.red, 1f);
-            invalidTiles.Add(cell);
-        }
-    }
-
-    #endregion
 
     #region validate Tile Loop Status
 
@@ -393,39 +360,34 @@ public class Interchained : MonoBehaviour
         if (!tile.IsMarkedForLoop)
         {
             if (possibleLoop.Contains(tile)) possibleLoop.Remove(tile);
-            if (invalidLoopTiles.Contains(tile.hex) == true) invalidLoopTiles.Remove(tile.hex);
-            if (msg) AddMsg(tile.hex, $"Not Loop!");
-            Debug.LogWarning($"{tile} Validated for loop, but is not marked as loop!");
+
+            return;
         }
 
-        if (!tile.IsPaired || tile.IsInvalid || tile.IsEmpty)
+        if (!tile.IsPaired || tile.IsEmpty)
         {
-            if (msg) AddMsg(tile.hex, $"{((tile.IsPaired) ? "paired" : "")}" +
-                                      $"{((tile.IsInvalid) ? "invalid" : "")}" +
-                                      $"{((tile.IsEmpty) ? "empty" : "")}(X)");
-            tile.MarkLoopAsIncorrect(true);
-            if (invalidLoopTiles.Contains(tile.hex) == false) invalidLoopTiles.Add(tile.hex);
+            if (msg) AddMsg(tile.hex, $"(X:{((!tile.IsPaired) ? "!p" : "")}" +
+                                      $"{((tile.IsEmpty) ? "0" : "")})");
+            tile.MarkAsInvalid();
             if (possibleLoop.Contains(tile)) possibleLoop.Remove(tile);
             passedChecks = false;
         }
         
-        var touchesLoopIncorrectly = _validator.IsTouchingLoopIncorrectly(tile.hex);
+        var touchesLoopIncorrectly = _validator.IsTouchingLoopIncorrectly(tile);
 
-        foreach (Hex hex in touchesLoopIncorrectly)
+        foreach (var incorrectlyTouchingTile in touchesLoopIncorrectly)
         {
-            if (msg) AddMsg(tile.hex, $"touching(X)", true);
-            hexGrid.GetTile(hex).MarkLoopAsIncorrect(true);
-            if (invalidLoopTiles.Contains(hex) == false) invalidLoopTiles.Add(hex);
-            if (possibleLoop.Contains(tile)) possibleLoop.Remove(tile);
+            if (msg) AddMsg(incorrectlyTouchingTile.hex, $"(X:∴)", true);
+            incorrectlyTouchingTile.MarkAsInvalid();
+            if (possibleLoop.Contains(incorrectlyTouchingTile)) possibleLoop.Remove(incorrectlyTouchingTile);
             passedChecks = false;
-            Debug.DrawLine(tile.hex.ToWorld(), hex.ToWorld(), Color.red, 1f);
+            Debug.DrawLine(tile.hex.ToWorld(), incorrectlyTouchingTile.hex.ToWorld(), Color.red, 1f);
         }
         
         if (passedChecks)
         {
             if (msg) AddMsg(tile.hex, $"(O)", true);
-            tile.MarkLoopAsIncorrect(false);
-            if (invalidLoopTiles.Contains(tile.hex) == true) invalidLoopTiles.Remove(tile.hex);
+            tile.MarkAsValid();
             if (possibleLoop.Contains(tile) == false) possibleLoop.Add(tile);
         }
     }
@@ -486,7 +448,7 @@ public class Interchained : MonoBehaviour
                 if (other.pairedTile.IsMarkedForLoop)
                 {
                     score--;
-                    if (other.pairedTile.IsOnLoopIncorrectly) score++;
+                    if (other.pairedTile.IsInvalid) score++;
                     else score--;
                 }
                 else
@@ -633,17 +595,15 @@ public class Interchained : MonoBehaviour
     private void ClearGameState()
     {
         _loopDrawer.ClearLoop();
-        invalidLoopTiles.Clear();
-        invalidLoopTiles = new List<Hex>();
         invalidTiles.Clear();
-        invalidTiles = new List<Hex>();
+        invalidTiles = new List<TileData>();
         possibleLoop.Clear();
         possibleLoop = new List<TileData>();
         ClearMsg();
         hexGrid.ClearBoard();
     }
 
-    private bool useNumbers = false;
+    private bool useNumbers = true;
     public void ToggleTileLabels()
     {
         foreach (TileData tile in hexGrid.GetGridArray())
@@ -668,8 +628,8 @@ public class Interchained : MonoBehaviour
         string message = $"<b><color=green>Tile Status:</b></color> ({tile.hex.q},{tile.hex.r}) \n";
         if (logValue) message += $"value ({tile.Value}, {(tile.IsInvalid ? "Invalid" : "Valid")}), in region ({tile.region}) \n";
         if (logPair) message += $"Tile is {((tile.IsPaired) ? "Paired" : "Single")}. I am the {((tile.IsLowerOfPair) ? "Lower" : "Higher")} of the pair.";
-        if (logLoop) message += $"Tile {((tile.IsMarkedForLoop) ? "is" : "is not")} marked as on loop. ({((tile.IsOnLoopIncorrectly) ? "incorrectly" : "correctly")})." +
-                                $" and is listed under {((invalidLoopTiles.Contains(tile.hex)) ? "\"Incorrect Loops\"," : "")} {((possibleLoop.Contains(tile)) ? "\"Possible Loop\"," : "")}.";
+        if (logLoop) message += $"Tile {((tile.IsMarkedForLoop) ? "is" : "is not")} marked as on loop" +
+                                $"{((possibleLoop.Contains(tile)) ? " and is listed under \"Possible Loop\"," : "")}.";
         Debug.Log(message);
     }
 

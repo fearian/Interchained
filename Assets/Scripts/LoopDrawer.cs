@@ -30,7 +30,7 @@ public class LoopDrawer : MonoBehaviour
         foreach (var tile in loopTiles)
         {
             if (tile == null) return false;
-            if (tile.IsInvalid || !tile.IsPaired || !tile.IsNumber || tile.IsOnLoopIncorrectly) return false;
+            if (tile.IsInvalid || !tile.IsPaired || !tile.IsNumber) return false;
         }
 
         possibleLoopTiles = loopTiles;
@@ -49,7 +49,7 @@ public class LoopDrawer : MonoBehaviour
         
         
         TileData currentTile = startingTile;
-        if (startingTile == null || startingTile.IsOnLoopIncorrectly)
+        if (startingTile == null || startingTile.IsInvalid)
         {
             currentTile = loopTiles[0];
             startingTile = currentTile;
@@ -145,7 +145,6 @@ public class LoopDrawer : MonoBehaviour
 
     public void ClearLoop()
     {
-        Debug.Log("Clearing Loop");
         LineRenderer.positionCount = 0;
     }
 }
