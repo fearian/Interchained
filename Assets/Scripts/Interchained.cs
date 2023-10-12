@@ -355,37 +355,31 @@ public class Interchained : MonoBehaviour
 
         bool passedChecks = true;
 
-        if (!tile.IsMarkedForLoop)
-        {
-            //if (possibleLoop.Contains(tile)) possibleLoop.Remove(tile);
-            return;
-        }
+        if (!tile.IsMarkedForLoop) return;
 
         if (!tile.IsPaired || tile.IsEmpty)
         {
             if (msg) AddMsg(tile.hex, $"(X:{((!tile.IsPaired) ? "!p" : "")}" +
                                       $"{((tile.IsEmpty) ? ",0" : "")})");
             tile.MarkAsInvalid();
-            //if (possibleLoop.Contains(tile)) possibleLoop.Remove(tile);
             passedChecks = false;
         }
         
         var touchesLoopIncorrectly = _validator.IsTouchingLoopIncorrectly(tile);
 
-        foreach (var incorrectlyTouchingTile in touchesLoopIncorrectly)
+        foreach (var incorrectTile in touchesLoopIncorrectly)
         {
-            if (msg) AddMsg(incorrectlyTouchingTile.hex, $"(X:∴)", false);
-            incorrectlyTouchingTile.MarkAsInvalid();
-            //if (possibleLoop.Contains(incorrectlyTouchingTile)) possibleLoop.Remove(incorrectlyTouchingTile);
+            incorrectTile.MarkAsInvalid();
             passedChecks = false;
-            Debug.DrawLine(tile.hex.ToWorld(), incorrectlyTouchingTile.hex.ToWorld(), Color.red, 1.5f);
+            
+            if (msg) AddMsg(incorrectTile.hex, $"(X:∴)", false);
+            Debug.DrawLine(tile.hex.ToWorld(), incorrectTile.hex.ToWorld(), Color.red, 1.5f);
         }
         
         if (passedChecks)
         {
             if (msg) AddMsg(tile.hex, $"(O)", false);
             tile.MarkAsValid();
-            //if (possibleLoop.Contains(tile) == false) possibleLoop.Add(tile);
         }
     }
     
@@ -488,7 +482,7 @@ public class Interchained : MonoBehaviour
 
         if (validLoopTiles.Count <= 0) return;
         
-        _loopDrawer.TryToDrawLoop(validLoopTiles.ToArray(), lastTile);
+        _loopDrawer.TryToDrawLoop(validLoopTiles.ToArray());
     }
 
     #endregion

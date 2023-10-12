@@ -38,7 +38,7 @@ public class LoopDrawer : MonoBehaviour
         return true;
     }
 
-    public void TryToDrawLoop(TileData[] loopTiles, TileData startingTile = null)
+    public void TryToDrawLoop(TileData[] loopTiles)
     {
         ClearLoop();
         if (EvaluateLoopTiles(loopTiles) == false) return;
@@ -48,12 +48,8 @@ public class LoopDrawer : MonoBehaviour
         if (msg) ClearMsg();
         
         
-        TileData currentTile = startingTile;
-        if (startingTile == null || startingTile.IsInvalid)
-        {
-            currentTile = loopTiles[0];
-            startingTile = currentTile;
-        }
+        TileData currentTile = loopTiles[0];
+        TileData startingTile = loopTiles[0];
         
         if (msg) AddMsg(startingTile.hex, "Start:");
 
@@ -132,15 +128,6 @@ public class LoopDrawer : MonoBehaviour
                 currentTile = currentTile.LoopIn;
             }
         }
-        
-        /*TileData prev = loopTiles[0];
-        for (int i = 0; i < loopTiles.Length; i++)
-        {
-            if (loopTiles.Length == 0) return;
-            
-            LineRenderer.SetPosition(i, loopTiles[i].hex.ToWorld(0.125f));
-            prev = loopTiles[i];
-        }*/
     }
 
     public void ClearLoop()
