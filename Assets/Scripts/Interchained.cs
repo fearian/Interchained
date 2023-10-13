@@ -6,6 +6,7 @@ using TMPro;
 using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Events;
+using UnityEngine.Tilemaps;
 using UnityEngine.UIElements;
 using Toggle = UnityEngine.UI.Toggle;
 using static HexMsg;
@@ -328,7 +329,169 @@ public class Interchained : MonoBehaviour
     
     private void AssignPairs(TileData tile)
     {
-        if (tile.Value >= 1 && tile.Value <= 7) CheckForPair(tile);
+        if (!(tile.Value >= 1 && tile.Value <= 6)) return;
+
+        var foundPair = CheckForPair(tile);
+
+        if (foundPair == null) return;
+        
+        TileData thisOldPair = null;
+        TileData otherOldPair = null;
+        if (tile.IsPaired)
+        {
+            thisOldPair = tile.pairedTile;
+            tile.RemovePair();
+        }
+        if (foundPair.IsPaired)
+        {
+            otherOldPair  = foundPair.pairedTile;
+            foundPair.RemovePair();
+        }
+        tile.SetPairedTile(foundPair);
+        foundPair.SetPairedTile(tile);
+        
+        //if (thisOldPair != null) CheckForPair(thisOldPair);
+        //if (otherOldPair != null) CheckForPair(otherOldPair);
+    }
+    
+    private TileData CheckForPair(TileData thisTile, bool msg = true)
+    {
+        if (msg) ClearMsg();
+        
+        var potentialPairs = _validator.NeighboursCanPair(thisTile);
+        if (potentialPairs.Count() <= 0) return null;
+
+        TileData bestPair = null;
+        int[] existingScores = new int[potentialPairs.Count()];
+        int[] replacingScores = new int[potentialPairs.Count()];
+
+        int i = 0;
+        foreach (var otherTile in potentialPairs)
+        {
+            if (otherTile.IsPaired) existingScores[i] = ScorePair(otherTile, otherTile.pairedTile);
+            else existingScores[i] = ScorePair(otherTile);
+            if (msg) AddMsg(otherTile.hex, $"{i}:({existingScores[i]})", true);
+            i++;
+        }
+
+        i = 0;
+        foreach (var otherTile in potentialPairs)
+        {
+            replacingScores[i] = ScorePair(otherTile, thisTile);
+            if (msg) AddMsg(otherTile.hex, $" (vs:{replacingScores[i]})", true);
+            i++;
+        }
+
+        int bestScore = -99;
+        for (int s = 0; s < existingScores.Length; s++)
+        {
+            string tracking = $"checking [{s}]";
+            if (existingScores[s] >= bestScore)
+            {
+                tracking += $" existingScore:{existingScores[s]} >= bestScore:{bestScore}";
+
+                if (existingScores[s] < replacingScores[s])
+                {
+                    tracking += $" existingScore:{existingScores[s]} < replacingScore:{replacingScores[s]}";
+                    bestPair = potentialPairs.ToArray()[s];
+                    bestScore = existingScores[s];
+                    if (msg) AddMsg(thisTile.hex, $"{s} best", true);
+                }
+                else if (existingScores[s] == replacingScores[s])
+                {
+                    tracking += $" existingScore:{existingScores[s]} == replacingScore:{replacingScores[s]}";
+                    TileData result = potentialPairs.ToArray()[s];
+                    if (!result.IsPaired)
+                    {
+                        bestPair = potentialPairs.ToArray()[s];
+                        bestScore = existingScores[s];
+                        if (msg) AddMsg(thisTile.hex, $"{s} best", true);
+                    }
+                }
+            }
+
+            Debug.Log(tracking);
+        }
+
+        return bestPair;
+
+        int ScorePair(TileData tileA, TileData tileB = null)
+        {
+            int score = 0;
+            
+            if (tileA.IsMarkedForLoop) score += 2;
+            if (tileA.IsInvalid) score--;
+            if (tileB != null)
+            {
+                if (tileA.pairedTile == tileB) score += 3;
+                if (tileB.IsMarkedForLoop) score += 2;
+                if (tileA.IsMarkedForLoop && tileB.IsMarkedForLoop) score +=2;
+                if (tileB.IsInvalid) score--;
+            }
+
+            return score;
+        }
+        
+        /*
+        TileData firstChoice = null;
+        int lowestOtherScore = 99;
+        int againstNewScore = -99;
+
+        i = 0;
+        foreach (var otherTile in potentialPairs)
+        {
+            i++;
+            int otherScore = 0; // stability score of existing other pair
+            int newScore = 0; // stability score of new pair with other
+            
+            bool otherIsMyPair = (otherTile.IsPaired && otherTile.pairedTile == thisTile);
+
+            if (otherTile.IsPaired && otherIsMyPair)
+            {
+                if (otherTile.IsMarkedForLoop){newScore+=2;}
+                if (otherTile.IsMarkedForLoop && thisTile.IsMarkedForLoop) newScore +=1;
+                
+                if (msg) AddMsg(otherTile.hex, $"{i}:paired", true);
+            }
+            else if (otherTile.IsPaired && !otherIsMyPair)
+            {
+                TileData othersPairedTile = otherTile.pairedTile;
+
+                otherScore += 2;
+                if (otherTile.IsMarkedForLoop) otherScore += 2;
+                if (othersPairedTile.IsMarkedForLoop) otherScore += 2;
+                if (otherTile.IsMarkedForLoop && othersPairedTile.IsMarkedForLoop) otherScore +=1;
+
+                if (otherTile.IsInvalid) otherScore--;
+                if (othersPairedTile.IsInvalid && !thisTile.IsInvalid) otherScore--;
+                
+                if (msg) AddMsg(othersPairedTile.hex, $"{i}:({otherScore})", true);
+            }
+            else if (otherTile.IsPaired == false)
+            {
+                if (otherTile.IsMarkedForLoop) newScore+=2;
+                if (otherTile.IsInvalid) newScore--;
+            }
+
+            if (thisTile.IsMarkedForLoop) newScore += 2;
+            if (thisTile.IsInvalid) newScore--;
+            
+            if (msg) AddMsg(otherTile.hex, $"{i}:({otherScore}) vs ({newScore}):0", true);
+
+            if (otherScore <= lowestOtherScore)
+            {
+                lowestOtherScore = otherScore;
+                firstChoice = otherTile;
+                againstNewScore = newScore;
+            }
+        }
+        
+        if (msg) AddMsg(thisTile.hex, $"n:{againstNewScore} vs ({lowestOtherScore}):0", true);
+        
+        if ((lowestOtherScore - againstNewScore) > 3 ) return null;
+
+        return firstChoice;
+        */
     }
     
     void ValidateLoop(TileData tile)
@@ -349,21 +512,21 @@ public class Interchained : MonoBehaviour
     {
         if (!(tile != null)) return;
         
-        bool msg = true;
-        if (msg) ClearMsg(tile.hex);
+        bool msg = false;
+        if (msg) ClearMsg();
         if (msg) AddMsg(tile.hex, "check", false);
 
         bool passedChecks = true;
 
         if (!tile.IsMarkedForLoop) return;
 
-        if (!tile.IsPaired || tile.IsEmpty)
+        /*if (!tile.IsPaired || tile.IsEmpty)
         {
             if (msg) AddMsg(tile.hex, $"(X:{((!tile.IsPaired) ? "!p" : "")}" +
                                       $"{((tile.IsEmpty) ? ",0" : "")})");
             tile.MarkAsInvalid();
             passedChecks = false;
-        }
+        }*/
         
         var touchesLoopIncorrectly = _validator.IsTouchingLoopIncorrectly(tile);
 
@@ -381,93 +544,6 @@ public class Interchained : MonoBehaviour
             if (msg) AddMsg(tile.hex, $"(O)", false);
             tile.MarkAsValid();
         }
-    }
-    
-    
-    private void CheckForPair(TileData tile, bool msg = false)
-    {
-        if (msg) ClearMsg();
-
-        var potentialPairs = _validator.NeighboursCanPair(tile);
-        if (potentialPairs.Count() <= 0) return;
-        
-        TileData firstChoice = null;
-        int bestScore = 0;
-        foreach (TileData other in potentialPairs)
-        {
-            bool otherIsMyPair = false;
-            if (other.IsPaired)
-            {
-                otherIsMyPair = (other.pairedTile == tile);
-            }
-            
-            // Single Tile Response
-            if (potentialPairs.Count() == 1)
-            {
-                if (other.IsPaired)
-                {
-                    if (other.IsMarkedForLoop &&
-                        (tile.IsMarkedForLoop == false || other.pairedTile.IsMarkedForLoop))
-                        break;
-                    else if (other.IsMarkedForLoop && tile.IsMarkedForLoop)
-                    {
-                        firstChoice = other;
-                        break;
-                    }
-                }
-                else
-                {
-                    firstChoice = other;
-                    break;
-                }
-            }
-
-            //Multi Tile evaluation
-            int score = 10;
-
-            if (other.IsInvalid) score--;
-            else score++;
-            if (tile.IsMarkedForLoop) score++;
-            if (other.IsMarkedForLoop)
-            {
-                if (tile.IsMarkedForLoop) score++;
-                else score--;
-            }
-            if (other.IsPaired && !otherIsMyPair)
-            {
-                score--;
-                if (other.pairedTile.IsMarkedForLoop)
-                {
-                    score--;
-                    if (other.pairedTile.IsInvalid) score++;
-                    else score--;
-                }
-                else
-                {
-                    score++;
-                    if (other.pairedTile.IsInvalid) score++;
-                    if (other.pairedTile.IsInvalid && !tile.IsInvalid) score++;
-                }
-            }
-            if (msg) AddMsg(other.hex, $":{score}!", true);
-
-            if (score >= bestScore)
-            {
-                bestScore = score;
-                firstChoice = other;
-            }
-        }
-
-        if (firstChoice == null)
-        {
-            if (msg) AddMsg(tile.hex, "N", true);
-            return;
-        }
-        
-        if (tile.IsPaired) tile.RemovePair();
-        if (firstChoice.IsPaired) firstChoice.RemovePair();
-        tile.SetPairedTile(firstChoice);
-        firstChoice.SetPairedTile(tile);
     }
 
     public void RedrawLoop(TileData lastTile = null)
