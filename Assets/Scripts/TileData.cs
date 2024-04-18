@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.Serialization;
@@ -11,7 +12,8 @@ public static class Constants
 
 public class TileData : Node
 {
-    public BoardRegions region;  
+    public BoardRegions region;
+    [SerializeField][Range(0,7)] private int defaultValue = 0;
     public int Value { get; private set; } = 0;
     public bool IsEmpty => (Value == 0);
     public bool IsNumber => Value is >= 1 and <= 7;
@@ -22,6 +24,7 @@ public class TileData : Node
     public bool IsHidden { get; private set; } = false;
     
     //Loop
+    public LoopNode LoopNode { get; private set; }
     public bool IsMarkedForLoop { get; private set; } = false;
     public TileData LoopIn = null;
     public TileData LoopOut = null;
@@ -37,6 +40,11 @@ public class TileData : Node
     public UnityEvent onLoopChanged;
     
     [SerializeField] public ParticleSystem loopParticles;
+
+    private void Awake()
+    {
+        SetValue(defaultValue);
+    }
 
     public int SetValue(int newValue)
     {

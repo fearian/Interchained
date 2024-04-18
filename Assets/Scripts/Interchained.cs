@@ -149,6 +149,8 @@ public class Interchained : MonoBehaviour
 
         if (tile.IsPaired)
         {
+            if (tile.pairedTile.IsLocked) return;
+            
             bool tileWasLower = tile.IsLowerOfPair;
             TileData pair = tile.pairedTile;
             tile.SetValue( (tileWasLower) ? tile.Value + 1 : tile.Value - 1 );
@@ -557,8 +559,10 @@ public class Interchained : MonoBehaviour
         }
 
         if (validLoopTiles.Count <= 0) return;
+
+        _loopDrawer.SortLoopTiles(validLoopTiles.ToArray());
         
-        _loopDrawer.TryToDrawLoop(validLoopTiles.ToArray());
+        //_loopDrawer.TryToDrawLoop(validLoopTiles.ToArray());
     }
 
     #endregion
