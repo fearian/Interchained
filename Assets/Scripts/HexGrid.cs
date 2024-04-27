@@ -104,7 +104,7 @@ public class HexGrid
         y = hex.q + GridRadius;
         if (!ValidHexes.Contains(hex))
         {
-            Debug.LogWarning($"ToArray: invalid board hex {hex}, array element null!");
+            //Debug.LogWarning($"ToArray: invalid board hex {hex}, array element null!");
             return;
         }
     }

@@ -13,6 +13,7 @@ public class LoopDrawer : MonoBehaviour
     private Validator _validator;
     private HexGrid _board = null;
     private TileData[] possibleLoopTiles;
+    private LoopGraph sortingGraph = new LoopGraph();
 
     [SerializeField] private LineRenderer LineRenderer;
 
@@ -41,34 +42,19 @@ public class LoopDrawer : MonoBehaviour
 
     public void SortLoopTiles(TileData[] loopTiles)
     {
-
-        //create a loop graph
-        LoopGraph sortingGraph = new LoopGraph();
+        if (EvaluateLoopTiles(loopTiles) == false) return;
+        sortingGraph = new LoopGraph();
+        Debug.Log("Starting new sort graph sort! ooh!");
         
         //add tiles as nodes, with adjacent as links.
         foreach (var tile in loopTiles)
         {
-            var AdjacentLoops = _validator.FindAdjacent(tile, possibleLoopTiles);
+            DebugExtension.DebugPoint(tile.hex.ToWorld(), Color.yellow, 0.1f);
+            TileData[] AdjacentLoops = FindAdjacentLoopTiles(tile);
+            if (AdjacentLoops == null) break;
             LoopNode[] adjacentNodes = loopTiles.Select(tile => new LoopNode(tile)).ToArray();
+            
             sortingGraph.AddNode(new LoopNode(tile), adjacentNodes);
-        }
-        
-        DebugGraph(sortingGraph);
-
-        return;
-    }
-
-    public void DebugGraph(LoopGraph graph)
-    {
-        foreach (var node in graph.Nodes)
-        {
-            DebugExtension.DebugPoint(node.Tile.hex.ToWorld() + new Vector3(0, 0.6f, 0), new Color(0.85f, 0.85f, 0.5f),
-                0.15f, 25f);
-            foreach (var link in node.Links)
-            {
-                Vector3 outDir = Vector3.Normalize((link.To.Tile.hex.ToWorld()) - link.From.Tile.hex.ToWorld()) * 0.4f;
-                DebugExtension.DebugArrow(link.From.Tile.hex.ToWorld() + new Vector3(0,0.6f,-0.01f), outDir, new Color(0.15f, 0.85f, 0.51f), 25f);
-            }
         }
     }
     
@@ -92,24 +78,7 @@ public class LoopDrawer : MonoBehaviour
         {
             
             // Find and evaluate Adjacent Loop Tiles
-            TileData[] AdjacentLoops = FindAdjacentLoops(currentTile);
-
-            TileData[] FindAdjacentLoops(TileData thisLoop)
-            {
-                var AdjacentLoops = _validator.FindAdjacent(thisLoop, possibleLoopTiles).ToArray();
-                if (AdjacentLoops.Count() < 1 || AdjacentLoops.Count() > 2)
-                {
-                    return null;
-                }
-
-                if (AdjacentLoops[0] == null || AdjacentLoops[1] == null)
-                {
-                    Debug.LogWarning("found 2 valid steps for the loop, but ended up as null in array?");
-                    return null;
-                }
-
-                return AdjacentLoops;
-            }
+            TileData[] AdjacentLoops = FindAdjacentLoopTiles(currentTile);
 
             if (AdjacentLoops == null) break;
 
@@ -142,11 +111,11 @@ public class LoopDrawer : MonoBehaviour
             if (currentTile.LoopOut != null)
             {
                 //Debug Lines
-                Vector3 inDir = Vector3.Normalize((currentTile.hex.ToWorld()) - currentTile.LoopIn.hex.ToWorld()) * 0.4f;
-                Vector3 outDir = Vector3.Normalize((currentTile.LoopOut.hex.ToWorld()) - currentTile.hex.ToWorld()) * 0.4f;
-                DebugExtension.DebugArrow((currentTile.hex.ToWorld() - inDir) + new Vector3(0,0.6f,0.01f), inDir, new Color(0.1f, 0.85f, 0.51f), 25f);
-                DebugExtension.DebugArrow(currentTile.hex.ToWorld() + new Vector3(0,0.6f,-0.01f), outDir, new Color(0.85f, 0.1f, 0.51f), 25f);
-                DebugExtension.DebugPoint(currentTile.hex.ToWorld() + new Vector3(0,0.6f,0), new Color(0.85f, 0.85f, 0.5f), 0.15f, 25f);
+                //Vector3 inDir = Vector3.Normalize((currentTile.hex.ToWorld()) - currentTile.LoopIn.hex.ToWorld()) * 0.4f;
+                //Vector3 outDir = Vector3.Normalize((currentTile.LoopOut.hex.ToWorld()) - currentTile.hex.ToWorld()) * 0.4f;
+                //DebugExtension.DebugArrow((currentTile.hex.ToWorld() - inDir) + new Vector3(0,0.6f,0.01f), inDir, new Color(0.1f, 0.85f, 0.51f), 25f);
+                //DebugExtension.DebugArrow(currentTile.hex.ToWorld() + new Vector3(0,0.6f,-0.01f), outDir, new Color(0.85f, 0.1f, 0.51f), 25f);
+                //DebugExtension.DebugPoint(currentTile.hex.ToWorld() + new Vector3(0,0.6f,0), new Color(0.85f, 0.85f, 0.5f), 0.15f, 25f);
                 
                 currentTile = currentTile.LoopOut;
                 step++;
@@ -185,9 +154,44 @@ public class LoopDrawer : MonoBehaviour
         }
     }
 
+    private TileData[] FindAdjacentLoopTiles(TileData tile)
+    {
+        TileData[] AdjacentLoops = _validator.FindInAdjacent(tile, possibleLoopTiles).ToArray();
+        
+        if (AdjacentLoops.Count() < 1 || AdjacentLoops.Count() > 2)
+        {
+            return null;
+        }
+
+        Debug.Log(AdjacentLoops[0]);
+        if (AdjacentLoops.Any(tile => tile == null))
+        {
+            Debug.LogWarning("found 2 valid steps for the loop, but ended up as null in array?");
+            return null;
+        }
+
+        return AdjacentLoops;
+    }
+
     public void ClearLoop()
     {
         LineRenderer.positionCount = 0;
+    }
+    
+    private void OnDrawGizmos()
+    {
+        if (sortingGraph == null) return;
+        foreach (var node in sortingGraph.Nodes)
+        {
+            var position = node.Tile.hex.ToWorld();
+            DebugExtension.DebugPoint(position, new Color(0.85f, 0.85f, 0.5f), 1f);
+            //new Color(0.15f, 0.85f, 0.51f)
+            foreach (var link in node.Links)
+            {
+                var direction = link.To.Tile.hex.ToWorld() - position;
+                DebugExtension.DrawArrow(position, direction, new Color(0.85f, 0.1f, 0.51f));
+            }
+        }
     }
     
 }

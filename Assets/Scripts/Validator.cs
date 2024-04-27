@@ -139,16 +139,18 @@ public class Validator
         return i;
     }
 
-    public IEnumerable<TileData> FindAdjacent(TileData tile, TileData[] targets)
+    public IEnumerable<TileData> FindInAdjacent(TileData tile, TileData[] targets)
     {
         if (tile.region == 0) yield break;
+        if (targets == null) yield break;
 
         foreach (Hex neighbour in tile.hex.Neighbours())
         {
             if (!_hexGrid.ValidHexes.Contains(neighbour)) continue;
 
             TileData neighbouringTile = _hexGrid.GetTile(neighbour);
-            if (targets.Contains(neighbouringTile)) yield return neighbouringTile;
+            
+            if (neighbouringTile != null && targets.Contains(neighbouringTile)) yield return neighbouringTile;
         }
     }
 

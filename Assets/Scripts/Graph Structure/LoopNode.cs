@@ -50,7 +50,7 @@ public class LoopNode
     }
 }
 
-[System.Serializable]
+//[System.Serializable]
 public class Link
 {
     public LoopNode From { get; set; }
