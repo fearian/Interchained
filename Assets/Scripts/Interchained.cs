@@ -412,7 +412,7 @@ public class Interchained : MonoBehaviour
                 }
             }
 
-            Debug.Log(tracking);
+            //Debug.Log(tracking);
         }
 
         return bestPair;

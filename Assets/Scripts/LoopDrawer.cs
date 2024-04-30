@@ -2,8 +2,6 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Runtime.CompilerServices;
-using Unity.VisualScripting;
 using UnityEditor;
 using UnityEngine;
 using static HexMsg;
@@ -49,10 +47,10 @@ public class LoopDrawer : MonoBehaviour
         //add tiles as nodes, with adjacent as links.
         foreach (var tile in loopTiles)
         {
-            DebugExtension.DebugPoint(tile.hex.ToWorld(), Color.yellow, 0.1f);
+            DebugExtension.DebugPoint(tile.hex.ToWorld() + new Vector3(0,1,0), Color.yellow, 0.1f);
             TileData[] AdjacentLoops = FindAdjacentLoopTiles(tile);
             if (AdjacentLoops == null) break;
-            LoopNode[] adjacentNodes = loopTiles.Select(tile => new LoopNode(tile)).ToArray();
+            LoopNode[] adjacentNodes = AdjacentLoops.Select(tile => new LoopNode(tile)).ToArray();
             
             sortingGraph.AddNode(new LoopNode(tile), adjacentNodes);
         }
@@ -163,7 +161,6 @@ public class LoopDrawer : MonoBehaviour
             return null;
         }
 
-        Debug.Log(AdjacentLoops[0]);
         if (AdjacentLoops.Any(tile => tile == null))
         {
             Debug.LogWarning("found 2 valid steps for the loop, but ended up as null in array?");
@@ -183,13 +180,14 @@ public class LoopDrawer : MonoBehaviour
         if (sortingGraph == null) return;
         foreach (var node in sortingGraph.Nodes)
         {
+            var offset = new Vector3(0,1,0);
             var position = node.Tile.hex.ToWorld();
-            DebugExtension.DebugPoint(position, new Color(0.85f, 0.85f, 0.5f), 1f);
+            DebugExtension.DebugPoint(position + offset, new Color(0.85f, 0.85f, 0.5f), 0.3f);
             //new Color(0.15f, 0.85f, 0.51f)
             foreach (var link in node.Links)
             {
                 var direction = link.To.Tile.hex.ToWorld() - position;
-                DebugExtension.DrawArrow(position, direction, new Color(0.85f, 0.1f, 0.51f));
+                DebugExtension.DrawArrow(position + offset, direction * 0.5f , new Color(0.85f, 0.1f, 0.51f));
             }
         }
     }
