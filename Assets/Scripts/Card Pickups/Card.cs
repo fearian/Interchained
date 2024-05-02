@@ -12,11 +12,12 @@ public class Card : MonoBehaviour,
     private Canvas canvas;
     private Image imageComponent;
     private RectTransform rect;
-    private Vector2 offset;
     float timeCount;
     
     [Header("Movement")]
     [SerializeField] private float moveSpeedLimit = 50;
+    private Vector2 offset;
+    private Vector2 targetPosition;
     private Vector2 direction;
     private Vector2 velocity;
 
@@ -43,14 +44,9 @@ public class Card : MonoBehaviour,
     {
         BeginDragEvent.Invoke(this);
         isDragging = true;
-        offset = Vector2.zero;
+        offset = (Vector2)Input.mousePosition - rect.anchoredPosition;
         canvas.GetComponent<GraphicRaycaster>().enabled = false;
         imageComponent.raycastTarget = false;
-    }
-
-    public void OnDrag(PointerEventData eventData)
-    {
-        offset = eventData.position;
     }
 
     public void OnEndDrag(PointerEventData eventData)
@@ -62,24 +58,30 @@ public class Card : MonoBehaviour,
         imageComponent.raycastTarget = true;
     }
 
+    public void OnDrag(PointerEventData eventData)
+    {
+        
+    }
+
     void Update()
     {
         //ClampPosition();
-        if (Input.GetMouseButtonDown(0))
-        {
-            Debug.Log($"");
-        }
         
         if (isDragging)
         {
-            direction = (offset - rect.anchoredPosition).normalized;
-            velocity = direction * Mathf.Min(moveSpeedLimit, Vector2.Distance(offset,rect.anchoredPosition) / Time.deltaTime);
-            transform.Translate(velocity * Time.deltaTime);
-            
+            targetPosition = (Vector2)Input.mousePosition - offset;
+            direction = (targetPosition - rect.anchoredPosition).normalized;
+            velocity = direction * Mathf.Min(moveSpeedLimit, Vector2.Distance(targetPosition,rect.anchoredPosition) / Time.deltaTime);
+            rect.anchoredPosition += (velocity * Time.deltaTime);
+            Logging();
+        }
+
+        void Logging()
+        {
             timeCount += Time.deltaTime;
             if (timeCount > 0.5f)
             {
-                Debug.Log($"[{offset}] - [{rect.anchoredPosition}]");
+                Debug.Log($"Mouse Position:[{targetPosition}]. Velocity: [{velocity}]");
                 timeCount = 0.0f;
             }
         }
