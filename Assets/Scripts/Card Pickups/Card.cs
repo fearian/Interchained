@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 public class Card : MonoBehaviour,
@@ -11,7 +12,7 @@ public class Card : MonoBehaviour,
 {
     private Canvas canvas;
     private Image imageComponent;
-    private RectTransform rect;
+    public RectTransform Rect;
     float timeCount;
     
     [Header("Movement")]
@@ -37,14 +38,14 @@ public class Card : MonoBehaviour,
     {
         canvas = GetComponentInParent<Canvas>();
         imageComponent = GetComponent<Image>();
-        rect = imageComponent.rectTransform;
+        Rect = imageComponent.rectTransform;
     }
 
     public void OnBeginDrag(PointerEventData eventData)
     {
         BeginDragEvent.Invoke(this);
         isDragging = true;
-        offset = (Vector2)Input.mousePosition - rect.anchoredPosition;
+        offset = (Vector2)Input.mousePosition - Rect.anchoredPosition;
         canvas.GetComponent<GraphicRaycaster>().enabled = false;
         imageComponent.raycastTarget = false;
     }
@@ -70,10 +71,10 @@ public class Card : MonoBehaviour,
         if (isDragging)
         {
             targetPosition = (Vector2)Input.mousePosition - offset;
-            direction = (targetPosition - rect.anchoredPosition).normalized;
-            velocity = direction * Mathf.Min(moveSpeedLimit, Vector2.Distance(targetPosition,rect.anchoredPosition) / Time.deltaTime);
-            rect.anchoredPosition += (velocity * Time.deltaTime);
-            Logging();
+            direction = (targetPosition - Rect.anchoredPosition).normalized;
+            velocity = direction * Mathf.Min(moveSpeedLimit, Vector2.Distance(targetPosition,Rect.anchoredPosition) / Time.deltaTime);
+            Rect.anchoredPosition += (velocity * Time.deltaTime);
+            //Logging();
         }
 
         void Logging()
@@ -120,9 +121,9 @@ public class Card : MonoBehaviour,
     {
         if (isDragging)
         {
-            DebugExtension.DebugPoint(canvas.worldCamera.ScreenToWorldPoint(offset), new Color(0.85f, 0.85f, 0.5f), 3f);
-            DebugExtension.DebugPoint(rect.transform.position, new Color(0.15f, 0.85f, 0.51f), 2f);
-            DebugExtension.DebugArrow(rect.transform.position, direction,  new Color(0.85f, 0.1f, 0.51f));
+            DebugExtension.DebugPoint(canvas.worldCamera.ScreenToWorldPoint(offset), new Color(0.85f, 0.85f, 0.5f), 1f);
+            DebugExtension.DebugPoint(Rect.transform.position, new Color(0.15f, 0.85f, 0.51f), .2f);
+            DebugExtension.DebugArrow(Rect.transform.position, direction * 0.3f,  new Color(0.85f, 0.1f, 0.51f));
         }
     }
 }
