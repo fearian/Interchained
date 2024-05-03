@@ -2,10 +2,12 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using DG.Tweening;
 using UnityEngine;
 
 public class CardContainer : MonoBehaviour
 {
+    [SerializeField] private CardZonesDirector director;
     [SerializeField] private GameObject slotPrefab;
     [SerializeField] private Card selectedCard;
     private Canvas canvas;
@@ -30,7 +32,7 @@ public class CardContainer : MonoBehaviour
             position = position * canvasRect.sizeDelta;
             var cardSlotRect = cardSlot.GetComponent<RectTransform>();
             cardSlotRect.position = position;
-            cardSlot.transform.SetParent(transform, false);
+            cardSlot.transform.SetParent(transform, true);
         }
         
         Cards = GetComponentsInChildren<Card>().ToList();
@@ -68,9 +70,14 @@ public class CardContainer : MonoBehaviour
         if (selectedCard == null)
             return;
 
-        selectedCard.Rect.anchoredPosition = Vector2.zero;
+        //selectedCard.Rect.anchoredPosition = Vector2.zero;
+
+        if (director.IsInSelectionZone(card))
+        {
+            Debug.Log("SELECT MEEEE?");
+        }
         
-        // selectedCard.transform.DOLocalMove(selectedCard.selected ? new Vector3(0,selectedCard.selectionOffset,0) : Vector3.zero, tweenCardReturn ? .15f : 0).SetEase(Ease.OutBack);
+        selectedCard.Rect.DOLocalMove(Vector3.zero, 0.15f).SetEase(Ease.OutBack);
 
         // rect.sizeDelta += Vector2.right;
         // rect.sizeDelta -= Vector2.right;
