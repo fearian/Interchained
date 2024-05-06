@@ -21,6 +21,8 @@ public class Card : MonoBehaviour,
     private Vector2 targetPosition;
     private Vector2 direction;
     private Vector2 velocity;
+    public CardSlot homeSlot;
+    public CardSlot currentSlot;
 
     [Header("States")]
     [SerializeField] private bool isDragging;

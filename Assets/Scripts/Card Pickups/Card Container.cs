@@ -7,11 +7,18 @@ using UnityEngine;
 
 public class CardContainer : MonoBehaviour
 {
-    [SerializeField] private CardZonesDirector director;
+    //[SerializeField] private CardZonesDirector director;
     [SerializeField] private GameObject slotPrefab;
     [SerializeField] private Card selectedCard;
     private Canvas canvas;
     private RectTransform canvasRect;
+    private RectTransform containerRect;
+
+    [Header("Zones")]
+    [SerializeField] private float distanceToLeaveContainer = 100f;
+    [SerializeField] private GameObject selectionPosition;
+    [SerializeField] private CardSlot selectionSlot;
+    [SerializeField] private HexGrid gameBoard;
 
     [Header("Slots")]
     [SerializeField] private List<Transform> worldSlotSpacePositions;
@@ -23,18 +30,26 @@ public class CardContainer : MonoBehaviour
     {
         canvas = GetComponentInParent<Canvas>();
         canvasRect = canvas.GetComponent<RectTransform>();
+        containerRect = this.GetComponent<RectTransform>();
+
+        Vector2 position = Vector2.zero;
         
         for (int i = 0; i < worldSlotSpacePositions.Count; i++)
         {
-            var cardSlot = Instantiate(slotPrefab, canvas.transform);
+            GameObject cardSlot = Instantiate(slotPrefab, canvas.transform);
             
-            Vector2 position = canvas.worldCamera.WorldToViewportPoint(worldSlotSpacePositions[i].position);
+            position = canvas.worldCamera.WorldToViewportPoint(worldSlotSpacePositions[i].position);
             position = position * canvasRect.sizeDelta;
-            var cardSlotRect = cardSlot.GetComponent<RectTransform>();
+            RectTransform cardSlotRect = cardSlot.GetComponent<RectTransform>();
             cardSlotRect.position = position;
             cardSlot.transform.SetParent(transform, true);
         }
         
+        position = canvas.worldCamera.WorldToViewportPoint(selectionPosition.transform.position);
+        position = position * canvasRect.sizeDelta;
+        selectionSlot.rect.position = position;
+
+
         Cards = GetComponentsInChildren<Card>().ToList();
         
         int cardCount = 0;
@@ -65,24 +80,24 @@ public class CardContainer : MonoBehaviour
         selectedCard = card;
     }
 
+    private void Update()
+    {
+        
+    }
+
     void EndDrag(Card card)
     {
-        if (selectedCard == null)
-            return;
+        if (selectedCard == null) return;
 
-        //selectedCard.Rect.anchoredPosition = Vector2.zero;
-
-        if (director.IsInSelectionZone(card))
-        {
-            Debug.Log("SELECT MEEEE?");
-        }
-        
-        selectedCard.Rect.DOLocalMove(Vector3.zero, 0.15f).SetEase(Ease.OutBack);
-
-        // rect.sizeDelta += Vector2.right;
-        // rect.sizeDelta -= Vector2.right;
+        var currentDistance = Vector2.Distance(selectedCard.transform.position, Vector2.zero);
+        if (currentDistance >= distanceToLeaveContainer) SendToSelectedSlot(selectedCard);
+        else selectedCard.Rect.DOLocalMove(Vector3.zero, 0.15f).SetEase(Ease.OutBack);
 
         selectedCard = null;
+    }
 
+    private void SendToSelectedSlot(Card card)
+    {
+        
     }
 }
