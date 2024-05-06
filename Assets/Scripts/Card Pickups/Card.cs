@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using DG.Tweening;
 using UnityEngine;
 using UnityEngine.Events;
 using UnityEngine.EventSystems;
@@ -14,6 +15,11 @@ public class Card : MonoBehaviour,
     private Image imageComponent;
     public RectTransform Rect;
     float timeCount;
+
+    //[Header("Dragging V2")]
+    [HideInInspector] public Transform parentAfterDrag { get; private set; }
+    [HideInInspector] public Transform homeParent { get; private set; }
+    [HideInInspector] public bool sendHomeAfterDrag = true;
     
     [Header("Movement")]
     [SerializeField] private float moveSpeedLimit = 50;
@@ -36,8 +42,9 @@ public class Card : MonoBehaviour,
     [HideInInspector] public UnityEvent<Card> EndDragEvent;
     [HideInInspector] public UnityEvent<Card, bool> SelectEvent;
 
-    void Start()
+    void Awake()
     {
+        homeParent = transform.parent;
         canvas = GetComponentInParent<Canvas>();
         imageComponent = GetComponent<Image>();
         Rect = imageComponent.rectTransform;
@@ -47,8 +54,13 @@ public class Card : MonoBehaviour,
     {
         BeginDragEvent.Invoke(this);
         isDragging = true;
+        sendHomeAfterDrag = true;
+        parentAfterDrag = transform.parent;
+        transform.SetParent(canvas.transform, true);
+        transform.SetAsFirstSibling();
         offset = (Vector2)Input.mousePosition - Rect.anchoredPosition;
-        canvas.GetComponent<GraphicRaycaster>().enabled = false;
+        
+        //canvas.GetComponent<GraphicRaycaster>().enabled = false;
         imageComponent.raycastTarget = false;
     }
 
@@ -57,8 +69,20 @@ public class Card : MonoBehaviour,
         EndDragEvent.Invoke(this);
         isDragging = false;
         offset = Vector2.zero;
-        canvas.GetComponent<GraphicRaycaster>().enabled = true;
         imageComponent.raycastTarget = true;
+        
+        ReturnToZero();
+    }
+
+    public void ReturnToZero()
+    {
+        if (sendHomeAfterDrag)
+        {
+            transform.SetParent(homeParent);
+        }
+        else transform.SetParent(parentAfterDrag);
+
+        Rect.DOLocalMove(Vector3.zero, 0.15f).SetEase(Ease.OutBack);
     }
 
     public void OnDrag(PointerEventData eventData)
@@ -117,6 +141,11 @@ public class Card : MonoBehaviour,
     public void OnPointerDown(PointerEventData eventData)
     {
         PointerDownEvent.Invoke(this);
+    }
+
+    public void SetParentAfterDrag(Transform transform)
+    {
+        parentAfterDrag = transform;
     }
 
     private void OnDrawGizmos()

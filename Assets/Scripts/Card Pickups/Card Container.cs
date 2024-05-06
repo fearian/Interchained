@@ -7,32 +7,33 @@ using UnityEngine;
 
 public class CardContainer : MonoBehaviour
 {
-    //[SerializeField] private CardZonesDirector director;
-    [SerializeField] private GameObject slotPrefab;
-    [SerializeField] private Card selectedCard;
     private Canvas canvas;
-    private RectTransform canvasRect;
-    private RectTransform containerRect;
 
     [Header("Zones")]
-    [SerializeField] private float distanceToLeaveContainer = 100f;
-    [SerializeField] private GameObject selectionPosition;
-    [SerializeField] private CardSlot selectionSlot;
+    [SerializeField] private Card selectedCard;
     [SerializeField] private HexGrid gameBoard;
 
     [Header("Slots")]
+    [SerializeField] private GameObject slotPrefab;
     [SerializeField] private List<Transform> worldSlotSpacePositions;
     
     [Header("Cards")]
     public List<Card> Cards;
 
-    private void Start()
+    private void Awake()
     {
         canvas = GetComponentInParent<Canvas>();
-        canvasRect = canvas.GetComponent<RectTransform>();
-        containerRect = this.GetComponent<RectTransform>();
+    }
 
+    private void Start()
+    {
+        CreateCardSlots();
+    }
+
+    private void CreateCardSlots()
+    {
         Vector2 position = Vector2.zero;
+        RectTransform canvasRect = canvas.GetComponent<RectTransform>();
         
         for (int i = 0; i < worldSlotSpacePositions.Count; i++)
         {
@@ -45,15 +46,9 @@ public class CardContainer : MonoBehaviour
             cardSlot.transform.SetParent(transform, true);
         }
         
-        position = canvas.worldCamera.WorldToViewportPoint(selectionPosition.transform.position);
-        position = position * canvasRect.sizeDelta;
-        selectionSlot.rect.position = position;
-
-
         Cards = GetComponentsInChildren<Card>().ToList();
         
         int cardCount = 0;
-        
         foreach (var card in Cards)
         {
             card.PointerEnterEvent.AddListener(CardPointerEnter);
@@ -80,24 +75,8 @@ public class CardContainer : MonoBehaviour
         selectedCard = card;
     }
 
-    private void Update()
-    {
-        
-    }
-
     void EndDrag(Card card)
     {
-        if (selectedCard == null) return;
-
-        var currentDistance = Vector2.Distance(selectedCard.transform.position, Vector2.zero);
-        if (currentDistance >= distanceToLeaveContainer) SendToSelectedSlot(selectedCard);
-        else selectedCard.Rect.DOLocalMove(Vector3.zero, 0.15f).SetEase(Ease.OutBack);
-
         selectedCard = null;
-    }
-
-    private void SendToSelectedSlot(Card card)
-    {
-        
     }
 }

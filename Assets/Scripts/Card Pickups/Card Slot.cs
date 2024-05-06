@@ -2,45 +2,53 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
+using UnityEngine.EventSystems;
 
-public class CardSlot : MonoBehaviour
+public class CardSlot : MonoBehaviour, IDropHandler
 {
-    public RectTransform rect;
-    public bool isOccupied { get; private set; }
-    public Card currentCard { get; private set; }
+    [SerializeField] private bool willSwapCurrentCardOnDrop = false;
+    private Card currentCard;
+    private bool isOccupied => currentCard != null;
 
-    private void Start()
+    public UnityEvent<CardSlot> DroppedEvent;
+
+    private void Awake()
     {
-        rect = GetComponent<RectTransform>();
-        currentCard = GetComponentInChildren<Card>();
-        if (currentCard != null) isOccupied = true;
+        Card childCard = this.GetComponentInChildren<Card>();
+        if (childCard != null) currentCard = childCard;
     }
 
-    public bool SetCard(Card card)
+    public void OnDrop(PointerEventData eventData)
     {
-        if (isOccupied) return false;
+        DroppedEvent.Invoke(this);
 
-        else
+        Card prevCard = null;
+
+        if (isOccupied)
         {
-            currentCard = card;
-            isOccupied = true;
-
-            return true;
+            if (willSwapCurrentCardOnDrop == false) return;
+            else prevCard = currentCard;
         }
-        
-    }
 
-    public Card RemoveCard()
-    {
-        if (!isOccupied) return null;
+        GameObject dropped = eventData.pointerDrag;
+        if (dropped.TryGetComponent(out currentCard) == false) return;
 
-        else
+        currentCard.sendHomeAfterDrag = false;
+        currentCard.SetParentAfterDrag(transform);
+        currentCard.BeginDragEvent.AddListener(BeginDrag);
+
+        if (prevCard != null)
         {
-            var removedCard = currentCard;
-            isOccupied = false;
-            currentCard = null;
-            return removedCard;
+            prevCard.BeginDragEvent.RemoveListener(BeginDrag);
+            prevCard.sendHomeAfterDrag = true;
+            prevCard.ReturnToZero();
         }
     }
-    
+
+    private void BeginDrag(Card card)
+    {
+        currentCard.BeginDragEvent.RemoveListener(BeginDrag);
+        currentCard = null;
+    }
 }
