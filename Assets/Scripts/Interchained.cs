@@ -64,6 +64,8 @@ public class Interchained : MonoBehaviour
 
     private void AcceptInput()
     {
+        if (GameManager.Instance.IsGamePlaying() == false) return;
+        
         // Mouse input on tiles
         if (_longPressDetection.isDetectingLongPress == false && Input.GetMouseButtonDown(0)) CycleValue(true);
         if (Input.GetMouseButtonDown(1)) CycleValue(false);
