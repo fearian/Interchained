@@ -34,7 +34,7 @@ public class Interchained : MonoBehaviour
 
     private HexGrid hexGrid;
 
-    private List<TileData> invalidTiles = new List<TileData>();
+    private HashSet<TileData> invalidTiles = new HashSet<TileData>();
 
     private Vector3 mousePos;
     void Start()
