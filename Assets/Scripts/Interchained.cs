@@ -670,7 +670,6 @@ public class Interchained : MonoBehaviour
     {
         _loopDrawer.ClearLoop();
         invalidTiles.Clear();
-        invalidTiles = new List<TileData>();
         ClearMsg();
         hexGrid.ClearBoard();
     }
