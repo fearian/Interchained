@@ -97,10 +97,12 @@ The DFS/BFS and `HasCycle` stubs would enable:
 - Could simplify `TryToDrawLoop` by using graph algorithms instead of manual stepping
 
 ### 4. Polished Win Detection (Low Priority)
-Currently `IsSolved()` just checks `invalidTiles.Count == 0`. At minimum, also verify:
-- The loop is closed (last tile connects back to first)
-- All tiles are non-empty
-- All 4 regions are complete (9 tiles each with unique values 1–9)
+The **canonical win condition is "the loop is closed"** — that single check is the central mechanic of the puzzle. The other apparent gates are *consequences*, not independent win conditions:
+- A closed loop requires domino-paired segments, which implicitly requires values 1–6 placed.
+- Sudoku validity is already enforced via `invalidTiles` (placement + loop-invalid as of the `IsOnLoopIncorrectly` work).
+- "All tiles filled" and "regions complete with 1–9" fall out of the above naturally and should NOT be added as separate gates.
+
+Currently `IsSolved()` checks `invalidTiles.Count == 0`, which is necessary but not sufficient — a half-solved board with no conflicts would pass. The real fix is to verify **the loop is closed** (last tile connects back to first via `LoopGraph.HasCycle()` or a successful `TryToDrawLoop` walk). This is blocked on the loop subsystem work (step #2 above and `LoopGraph.HasCycle` in step #3) and should be landed alongside it, not as a partial gate beforehand.
 
 ### 5. Level Design & Progression (Ongoing)
 - More puzzle levels with varying gear/loop complexity
