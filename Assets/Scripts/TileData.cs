@@ -28,7 +28,7 @@ public class TileData : Node
     public bool IsMarkedForLoop { get; private set; } = false;
     public TileData LoopIn = null;
     public TileData LoopOut = null;
-    //public bool IsOnLoopIncorrectly { get; private set; } = false;
+    public bool IsOnLoopIncorrectly { get; private set; } = false;
     
     //Pairs
     public TileData pairedTile { get; private set; }
@@ -109,6 +109,7 @@ public class TileData : Node
         {
             LoopIn = null;
             LoopOut = null;
+            IsOnLoopIncorrectly = false;
         }
         
         onValueChanged.Invoke();
@@ -133,6 +134,13 @@ public class TileData : Node
         if (IsMarkedForLoop) onLoopChanged.Invoke();
     }
 
+    public void MarkLoopIncorrect(bool isIncorrect)
+    {
+        IsOnLoopIncorrectly = isIncorrect;
+        onValueChanged.Invoke();
+        if (IsMarkedForLoop) onLoopChanged.Invoke();
+    }
+
     public void MarkLocked(bool isLocked)
     {
         if (IsEmpty)
@@ -152,6 +160,7 @@ public class TileData : Node
             IsLocked = true;
             IsMarkedForLoop = false;
             IsInvalid = false;
+            IsOnLoopIncorrectly = false;
             onValueChanged.Invoke();
             onLoopChanged.Invoke();
         }
@@ -172,6 +181,7 @@ public class TileData : Node
         LoopIn = null;
         LoopOut = null;
         IsInvalid = false;
+        IsOnLoopIncorrectly = false;
         onValueChanged.Invoke();
         onLoopChanged.Invoke();
     }

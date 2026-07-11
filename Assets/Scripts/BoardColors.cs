@@ -20,6 +20,7 @@ public class BoardColors : ScriptableObject
     public Color invalidTile = Color.red;
     public Color loopTile = Color.blue;
     public Color loopComplete = Color.green;
+    public Color loopInvalidTile = new Color(1f, 0.5f, 0f); // orange: distinct from placement-invalid red
 
     [Header("Token Meshes")]
     public Mesh tokenMesh;

@@ -100,7 +100,9 @@ public class TileVisuals : MonoBehaviour
         {
             cwRotator?.IsRotating(false);
             ccwRotator?.IsRotating(false);
-            boardToken.material.color = boardColorPalette.invalidTile;
+            boardToken.material.color = tileData.IsOnLoopIncorrectly
+                ? boardColorPalette.loopInvalidTile
+                : boardColorPalette.invalidTile;
         }
         else if (tileData.IsMarkedForLoop)
         {

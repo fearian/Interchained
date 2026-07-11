@@ -524,37 +524,61 @@ public class Interchained : MonoBehaviour
     {
         if (!(tile != null)) return;
         
-        bool msg = false;
+        bool msg = true;
         if (msg) ClearMsg();
         if (msg) AddMsg(tile.hex, "check", false);
 
-        bool passedChecks = true;
-
-        if (!tile.IsMarkedForLoop) return;
+        if (!tile.IsMarkedForLoop)
+        {
+            // Tile is no longer on the loop: clear any lingering loop-incorrect flag
+            // so its visual doesn't get stuck in the loop-invalid state.
+            if (tile.IsOnLoopIncorrectly) tile.MarkLoopIncorrect(false);
+            return;
+        }
 
         /*if (!tile.IsPaired || tile.IsEmpty)
         {
             if (msg) AddMsg(tile.hex, $"(X:{((!tile.IsPaired) ? "!p" : "")}" +
                                       $"{((tile.IsEmpty) ? ",0" : "")})");
             tile.MarkAsInvalid();
-            passedChecks = false;
+            tile.MarkLoopIncorrect(true);
+            invalidTiles.Add(tile);
         }*/
         
         var touchesLoopIncorrectly = _validator.IsTouchingLoopIncorrectly(tile);
+        bool anyIncorrect = false;
 
         foreach (var incorrectTile in touchesLoopIncorrectly)
         {
             incorrectTile.MarkAsInvalid();
-            passedChecks = false;
+            incorrectTile.MarkLoopIncorrect(true);
+            invalidTiles.Add(incorrectTile);
+            anyIncorrect = true;
             
             if (msg) AddMsg(incorrectTile.hex, $"(X:∴)", false);
             Debug.DrawLine(tile.hex.ToWorld(), incorrectTile.hex.ToWorld(), Color.red, 1.5f);
         }
         
-        if (passedChecks)
+        if (!anyIncorrect)
         {
-            if (msg) AddMsg(tile.hex, $"(O)", false);
-            tile.MarkAsValid();
+            // Loop degree check passes. Clear the loop-incorrect flag, then refresh
+            // placement state - the tile may still be invalid for sudoku/gear reasons,
+            // in which case IsInvalid must stay true; otherwise release it from tracking.
+            if (tile.IsOnLoopIncorrectly) tile.MarkLoopIncorrect(false);
+
+            bool placementBad = (tile.IsNumber && _validator.InvalidNumber(tile))
+                                || (tile.IsGear && _validator.InvalidGear(tile));
+
+            if (placementBad)
+            {
+                ValidatePlacement(tile);
+            }
+            else
+            {
+                if (msg) AddMsg(tile.hex, $"(O)", false);
+                tile.MarkAsValid();
+                invalidTiles.Remove(tile);
+            }
         }
     }
 
