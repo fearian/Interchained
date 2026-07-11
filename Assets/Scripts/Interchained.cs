@@ -275,6 +275,14 @@ public class Interchained : MonoBehaviour
                     PassesPlacementEval.Add(tile);
                 }
             }
+            else if (tile.IsBlocker)
+            {
+                // Blockers are pure obstacles (AGENTS.md): outside the sudoku/gear
+                // ruleset. They should never enter invalidTiles via ValidatePlacement,
+                // but force-release them here as a guard so a future code path can't
+                // land one permanently stuck in the list.
+                PassesPlacementEval.Add(tile);
+            }
             
         }
 
