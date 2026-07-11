@@ -362,6 +362,13 @@ public class Interchained : MonoBehaviour
         tile.SetPairedTile(foundPair);
         foundPair.SetPairedTile(tile);
         
+        // Auto-pair is intentionally LOCAL: orphans left by a pair tear-down are
+        // NOT recursively re-paired here. This respects player-made decisions on
+        // the rest of the board - recursively stealing partners would undo setups
+        // the player deliberately constructed. Touching a tile re-triggers
+        // EvaluationCycle -> AssignPairs, so orphans can be manually re-paired.
+        // Loop-marked tiles are further biased to stay paired via ScorePair's
+        // +3 stability bonus + loop-tile weighting. See AGENTS.md for full design.
         //if (thisOldPair != null) CheckForPair(thisOldPair);
         //if (otherOldPair != null) CheckForPair(otherOldPair);
     }
