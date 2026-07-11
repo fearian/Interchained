@@ -88,6 +88,8 @@ This is the core remaining rule. Per the design plan:
 - Handle incomplete loops gracefully (partial direction assignment)
 - This is a prerequisite for reliable gear-loop validation
 
+**Recommended development order:** stabilise the loop graph in `LoopDrawer.OnDrawGizmos` first (the yellow-points-and-arrows debug view in the Scene window). The debug view is the right iteration surface for validating `FindAdjacentLoopTiles` ordering, `LoopGraph` link construction, and direction assignment — it's already wired up via `SortLoopTiles` and survives independent of the runtime LineRenderer. Only re-enable `TryToDrawLoop` (currently commented out in `Interchained.RedrawLoop`) once the gizmo representation is correct and deterministic across mid-puzzle states.
+
 ### 3. Implement LoopGraph Pathfinding (Medium Priority)
 The DFS/BFS and `HasCycle` stubs would enable:
 - Verifying the loop is a single closed cycle (no branches)
