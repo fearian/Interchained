@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Loops as Graphs &mdash; A Visual Primer</title>
+<style>
+  :root{
+    --ink:#1a1f29; --mute:#5b6470; --accent:#2563eb; --warn:#dc2626;
+    --bg:#ffffff; --tint:#f5f7fa; --line:#e3e7ee;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:17px/1.65 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap{max-width:720px; margin:0 auto; padding:0 1.25rem 4rem;}
+  header{padding:2rem 0 .5rem;}
+  header h1{font-size:2.05rem; margin:0 0 .25rem; letter-spacing:-.01em;}
+  header p.sub{color:var(--mute); margin:0; font-size:1.02rem;}
+
+  nav.toc{
+    position:sticky; top:0; z-index:5;
+    background:rgba(255,255,255,.9); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+    margin:1.4rem -1.25rem 0; padding:.6rem 1.25rem;
+    display:flex; flex-wrap:wrap; gap:.35rem 1rem; font-size:.85rem;
+  }
+  nav.toc a{color:var(--mute); text-decoration:none; white-space:nowrap;}
+  nav.toc a:hover{color:var(--accent);}
+  nav.toc .n{color:var(--accent); font-weight:700; margin-right:.25rem;}
+
+  h2{font-size:1.35rem; margin:2.3rem 0 .5rem; scroll-margin-top:3.2rem;}
+  p{margin:.55rem 0;}
+  .lead{font-size:1.05rem;}
+
+  figure.diagram{margin:1.2rem 0; max-width:340px;}
+  figure.diagram.wide{max-width:560px;}
+  figure.diagram.big{max-width:420px;}
+  figure.diagram svg{display:block; width:100%; height:auto;}
+  figcaption{color:var(--mute); font-size:.85rem; text-align:center; margin:.4rem 0 1.1rem; line-height:1.45;}
+
+  .hex.ref{fill:#fff; stroke:var(--line); stroke-width:.07;}
+  .hex.tile{fill:#f3f4f6; stroke:#d6dae2; stroke-width:.07;}
+  .hex.loop{fill:rgba(37,99,235,.15); stroke:var(--accent); stroke-width:.09;}
+  .hex.focus{fill:rgba(220,38,38,.18); stroke:var(--warn); stroke-width:.12;}
+  .edge{stroke:#1d4ed8; stroke-width:.14; stroke-linecap:round;}
+  text.lbl{font:700 .52px ui-sans-serif, system-ui, sans-serif; fill:#0f172a; text-anchor:middle; dominant-baseline:central;}
+  text.lbl.warn{fill:#b91c1c; font-size:.6px;}
+
+  .abstract{max-width:280px;}
+  .abstract .nd{fill:var(--accent);}
+  .abstract .ed{stroke:var(--accent); stroke-width:3; stroke-linecap:round;}
+  .abstract .nl{fill:#fff; font:700 13px ui-sans-serif, system-ui, sans-serif; text-anchor:middle; dominant-baseline:central;}
+
+  .legend{display:flex; gap:.8rem 1.2rem; justify-content:center; flex-wrap:wrap;
+    font-size:.82rem; color:var(--mute); margin:1rem 0 .4rem; text-align:left;}
+  .legend span{display:inline-flex; align-items:center; gap:.4rem;}
+  .legend i{width:15px; height:15px; border-radius:3px; display:inline-block; flex-shrink:0;}
+  .legend .sw-loop{background:rgba(37,99,235,.15); border:1.5px solid var(--accent);}
+  .legend .sw-focus{background:rgba(220,38,38,.18); border:1.5px solid var(--warn);}
+  .legend .sw-edge{background:transparent; border:0; position:relative; width:18px; height:0;}
+  .legend .sw-edge::after{content:""; position:absolute; left:0; top:-2px; width:18px; height:3px; background:#1d4ed8; border-radius:2px;}
+
+  .callout{border-left:3px solid var(--accent); background:var(--tint);
+    padding:.7rem 1rem; border-radius:0 6px 6px 0; margin:1.1rem 0; font-size:.95rem;}
+  .callout.warn{border-left-color:var(--warn);}
+  .callout strong{color:var(--accent);}
+  .callout.warn strong{color:var(--warn);}
+  .callout .tag{display:block; font-size:.72rem; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--accent); margin-bottom:.2rem; font-weight:700;}
+  .callout.warn .tag{color:var(--warn);}
+
+  code{background:var(--tint); padding:.1rem .35rem; border-radius:4px;
+    font-size:.86em; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;}
+
+  .pull{border-left:3px solid var(--accent); padding:.2rem 0 .2rem 1rem;
+    margin:1.1rem 0; font-size:1.05rem;}
+
+  ol.steps{margin:.8rem 0; padding-left:1.3rem;}
+  ol.steps li{margin:.35rem 0;}
+
+  dl.glossary{margin:1rem 0;}
+  dl.glossary dt{font-weight:700; margin-top:.7rem;}
+  dl.glossary dd{margin:.05rem 0 0; color:var(--ink);}
+
+  footer{margin-top:3rem; color:var(--mute); font-size:.85rem;
+    border-top:1px solid var(--line); padding-top:1rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Loops as Graphs</h1>
+    <p class="sub">A short visual primer on the handful of graph&#8209;theory ideas behind checking whether a loop is valid. No code yet &mdash; just pictures and logic.</p>
+  </header>
+
+  <nav class="toc">
+    <a href="#s1"><span class="n">1</span>Graphs</a>
+    <a href="#s2"><span class="n">2</span>Degree</a>
+    <a href="#s3"><span class="n">3</span>Walks &amp; cycles</a>
+    <a href="#s4"><span class="n">4</span>Valid loops</a>
+    <a href="#s5"><span class="n">5</span>The short cut</a>
+    <a href="#s6"><span class="n">6</span>The check</a>
+    <a href="#s7"><span class="n">7</span>Glossary</a>
+  </nav>
+
+  <!-- ==================== 1 ==================== -->
+  <h2 id="s1">1. A graph is just dots and lines</h2>
+  <p class="lead">A <em>graph</em> is a bundle of dots with lines joining some of them. That is the whole invention. The dots are called <strong>nodes</strong> (or vertices), and the lines are called <strong>edges</strong>.</p>
+  <p>Nothing else comes with it &mdash; no shape, no length, no direction (for now). An edge says only one thing: <em>these two nodes are connected</em>.</p>
+  <p>Picture a chain necklace: each link is a node, joined to the two links beside it. The whole necklace is a graph. So is a map of towns and the roads between them.</p>
+
+  <figure class="diagram abstract" style="margin:1.2rem auto;">
+    <svg viewBox="0 0 240 150" aria-label="Abstract graph of five nodes and six edges">
+      <g class="ed">
+        <line x1="40" y1="45" x2="120" y2="30"/>
+        <line x1="120" y1="30" x2="200" y2="50"/>
+        <line x1="40" y1="45" x2="80" y2="115"/>
+        <line x1="80" y1="115" x2="160" y2="110"/>
+        <line x1="160" y1="110" x2="200" y2="50"/>
+        <line x1="120" y1="30" x2="160" y2="110"/>
+      </g>
+      <g class="nd">
+        <circle cx="40" cy="45" r="13"/>
+        <circle cx="120" cy="30" r="13"/>
+        <circle cx="200" cy="50" r="13"/>
+        <circle cx="80" cy="115" r="13"/>
+        <circle cx="160" cy="110" r="13"/>
+      </g>
+      <g class="nl">
+        <text x="40" y="45">A</text>
+        <text x="120" y="30">B</text>
+        <text x="200" y="50">C</text>
+        <text x="80" y="115">D</text>
+        <text x="160" y="110">E</text>
+      </g>
+    </svg>
+    <figcaption>Five nodes, six edges. You can trace a closed trip B&rarr;C&rarr;E&rarr;B &mdash; that is already a loop, in the everyday sense.</figcaption>
+  </figure>
+
+  <p>Now swap &ldquo;towns&rdquo; for &ldquo;tiles&rdquo;. In our game the nodes are tiles, and an edge exists between two tiles that share a side.</p>
+
+  <figure class="diagram" style="max-width:240px;">
+    <script type="application/json">
+      {"tiles":[{"q":0,"r":0,"role":"loop"},{"q":1,"r":0,"role":"loop"}]}
+    </script>
+    <figcaption>Two neighbouring tiles. The edge between them is the whole graph.</figcaption>
+  </figure>
+
+  <div class="legend">
+    <span><i class="sw-loop"></i>part of the loop</span>
+    <span><i class="sw-focus"></i>a problem tile</span>
+    <span><i class="sw-edge"></i>an edge (adjacency)</span>
+    <span>the number = how many loop&#8209;neighbours a tile has</span>
+  </div>
+
+  <aside class="callout">
+    <span class="tag">Hex grid note</span>
+    Tiles are our <em>nodes</em>. Each tile has a position given by a pair of whole numbers, written <code>(q, r)</code>. Two tiles are joined by an <em>edge</em> in our graph exactly when they sit side by side and share a border.
+  </aside>
+
+  <!-- ==================== 2 ==================== -->
+  <h2 id="s2">2. Adjacency and degree</h2>
+  <p>Two nodes are <strong>adjacent</strong> when an edge joins them. On our board that simply means &ldquo;two tiles that are neighbours&rdquo;.</p>
+  <p>The <strong>degree</strong> of a node is the number of edges that touch it. For us, that is: <em>how many of a tile&rsquo;s neighbours are currently part of the loop</em>.</p>
+
+  <figure class="diagram" style="max-width:300px;">
+    <script type="application/json">
+      {"tiles":[
+        {"q":0,"r":0,"role":"loop","label":"auto"},
+        {"q":1,"r":0,"role":"loop"},
+        {"q":0,"r":-1,"role":"loop"},
+        {"q":1,"r":-1,"role":"ref"},
+        {"q":-1,"r":0,"role":"ref"},
+        {"q":-1,"r":1,"role":"ref"},
+        {"q":0,"r":1,"role":"ref"}
+      ]}
+    </script>
+    <figcaption>The centre tile has <strong>two</strong> loop&#8209;neighbours. Its degree is 2.</figcaption>
+  </figure>
+
+  <aside class="callout">
+    <span class="tag">Hex grid note</span>
+    Every tile in our grid has <strong>six</strong> neighbour positions &mdash; one across each side. In code these are the six <em>axial directions</em> (<code>Hex.AXIAL_DIRECTIONS</code>), and <code>Hex.Neighbours()</code> returns them for any tile. So a tile&rsquo;s degree is just &ldquo;how many of those six are currently marked for the loop&rdquo;.
+  </aside>
+
+  <p>Here is the number to hold onto: <strong>a contented loop tile has degree exactly two</strong> &mdash; one neighbour in, one neighbour out. If you remember nothing else from this page, remember <em>two</em>.</p>
+
+  <!-- ==================== 3 ==================== -->
+  <h2 id="s3">3. Walks, paths, and cycles</h2>
+  <p>A <strong>walk</strong> is a stroll from tile to tile along edges. A <strong>path</strong> is a walk that never visits the same tile twice. A <strong>cycle</strong> is a path that ends where it began &mdash; it closes up.</p>
+
+  <figure class="diagram" style="max-width:360px;">
+    <script type="application/json">
+      {"tiles":[
+        {"q":0,"r":0,"role":"loop","label":"auto"},
+        {"q":1,"r":0,"role":"loop","label":"auto"},
+        {"q":2,"r":0,"role":"loop","label":"auto"},
+        {"q":3,"r":0,"role":"loop","label":"auto"}
+      ]}
+    </script>
+    <figcaption>An open chain. Each end tile touches only one loop&#8209;neighbour (degree&nbsp;1). The loop is not closed yet.</figcaption>
+  </figure>
+
+  <figure class="diagram" style="max-width:300px;">
+    <script type="application/json">
+      {"tiles":[
+        {"q":0,"r":0,"role":"ref"},
+        {"q":1,"r":0,"role":"loop","label":"auto"},
+        {"q":1,"r":-1,"role":"loop","label":"auto"},
+        {"q":0,"r":-1,"role":"loop","label":"auto"},
+        {"q":-1,"r":0,"role":"loop","label":"auto"},
+        {"q":-1,"r":1,"role":"loop","label":"auto"},
+        {"q":0,"r":1,"role":"loop","label":"auto"}
+      ]}
+    </script>
+    <figcaption>Now the ends have met. Every tile touches two loop&#8209;neighbours, and you can walk round and round forever. That is a <strong>cycle</strong>.</figcaption>
+  </figure>
+
+  <!-- ==================== 4 ==================== -->
+  <h2 id="s4">4. So what makes a loop valid?</h2>
+  <p>Three things have to line up.</p>
+
+  <p><strong>(1) Every loop tile has degree exactly two.</strong></p>
+  <figure class="diagram" style="max-width:300px;">
+    <script type="application/json">
+      {"tiles":[
+        {"q":0,"r":0,"role":"focus","label":"auto"},
+        {"q":1,"r":0,"role":"loop","label":"auto"},
+        {"q":0,"r":-1,"role":"loop","label":"auto"},
+        {"q":-1,"r":1,"role":"loop","label":"auto"},
+        {"q":1,"r":-1,"role":"ref"},
+        {"q":-1,"r":0,"role":"ref"},
+        {"q":0,"r":1,"role":"ref"}
+      ]}
+    </script>
+    <figcaption>Where three strands meet, one tile has <strong>three</strong> loop&#8209;neighbours. That is a fork, not a loop &mdash; invalid.</figcaption>
+  </figure>
+
+  <p><strong>(2) The loop is one connected piece.</strong></p>
+  <figure class="diagram wide">
+    <script type="application/json">
+      {"tiles":[
+        {"q":1,"r":0,"role":"loop","label":"auto"},
+        {"q":1,"r":-1,"role":"loop","label":"auto"},
+        {"q":0,"r":-1,"role":"loop","label":"auto"},
+        {"q":-1,"r":0,"role":"loop","label":"auto"},
+        {"q":-1,"r":1,"role":"loop","label":"auto"},
+        {"q":0,"r":1,"role":"loop","label":"auto"},
+
+        {"q":6,"r":0,"role":"loop","label":"auto"},
+        {"q":6,"r":-1,"role":"loop","label":"auto"},
+        {"q":5,"r":-1,"role":"loop","label":"auto"},
+        {"q":4,"r":0,"role":"loop","label":"auto"},
+        {"q":4,"r":1,"role":"loop","label":"auto"},
+        {"q":5,"r":1,"role":"loop","label":"auto"}
+      ]}
+    </script>
+    <figcaption>Two flawless little loops, side by side. Each is perfect on its own, but they never join. The puzzle asks for <em>one</em> loop, not two.</figcaption>
+  </figure>
+
+  <p><strong>(3) It is a single cycle &mdash; no tile is used twice.</strong></p>
+  <figure class="diagram" style="max-width:320px;">
+    <script type="application/json">
+      {"tiles":[
+        {"q":0,"r":0,"role":"focus","label":"auto"},
+        {"q":1,"r":0,"role":"loop","label":"auto"},
+        {"q":1,"r":-1,"role":"loop","label":"auto"},
+        {"q":-1,"r":0,"role":"loop","label":"auto"},
+        {"q":-1,"r":1,"role":"loop","label":"auto"}
+      ]}
+    </script>
+    <figcaption>Try to run two strands through one tile and it ends up with <strong>four</strong> loop&#8209;neighbours. Invalid, for the same reason as the fork: a degree other than two.</figcaption>
+  </figure>
+
+  <p>(A chain with degree&#8209;1 ends is not <em>wrong</em> so much as <em>unfinished</em> &mdash; it is still waiting to close.)</p>
+
+  <!-- ==================== 5 ==================== -->
+  <h2 id="s5">5. The short cut</h2>
+  <p>Here is the elegant part. Those three rules collapse into a single, checkable condition:</p>
+  <p class="pull">If every loop tile has exactly two loop&#8209;neighbours, and you can reach every loop tile from every other by stepping through loop tiles, then the loop is guaranteed to be one closed cycle.</p>
+  <p>Why? If each tile has exactly two neighbours, there are no dead ends and no forks &mdash; the only things that can exist are rings (you can only keep going round and round). Adding &ldquo;everything is reachable from everything else&rdquo; rules out <em>several separate rings</em>. What is left is exactly one ring.</p>
+  <p>So you never have to trace the loop to know it is closed. You just <strong>count</strong>: two, two, two&hellip; and check it is all one piece.</p>
+
+  <figure class="diagram big">
+    <script type="application/json">
+      {"tiles":[
+        {"q":0,"r":-2,"role":"loop","label":"auto"},
+        {"q":1,"r":-2,"role":"loop","label":"auto"},
+        {"q":2,"r":-2,"role":"loop","label":"auto"},
+        {"q":2,"r":-1,"role":"loop","label":"auto"},
+        {"q":2,"r":0,"role":"loop","label":"auto"},
+        {"q":1,"r":1,"role":"loop","label":"auto"},
+        {"q":0,"r":2,"role":"loop","label":"auto"},
+        {"q":-1,"r":2,"role":"loop","label":"auto"},
+        {"q":-2,"r":2,"role":"loop","label":"auto"},
+        {"q":-2,"r":1,"role":"loop","label":"auto"},
+        {"q":-2,"r":0,"role":"loop","label":"auto"},
+        {"q":-1,"r":-1,"role":"loop","label":"auto"},
+
+        {"q":0,"r":0,"role":"ref"},
+        {"q":1,"r":0,"role":"ref"},
+        {"q":1,"r":-1,"role":"ref"},
+        {"q":0,"r":-1,"role":"ref"},
+        {"q":-1,"r":0,"role":"ref"},
+        {"q":-1,"r":1,"role":"ref"},
+        {"q":0,"r":1,"role":"ref"}
+      ]}
+    </script>
+    <figcaption>Twelve tiles, each touching exactly two others, all woven into a single piece. One closed cycle &mdash; solved.</figcaption>
+  </figure>
+
+  <!-- ==================== 6 ==================== -->
+  <h2 id="s6">6. A sketch of the check</h2>
+  <p>In plain steps, a validity check could run like this:</p>
+  <ol class="steps">
+    <li>Collect every tile the player has marked for the loop. Those are the nodes.</li>
+    <li>For each, count how many of its six neighbours are also marked. That count is its degree.</li>
+    <li>If any tile has degree 3 or more &rarr; there is a fork &rarr; invalid.</li>
+    <li>If any tile has degree 0 or 1 &rarr; the loop is unfinished (a dangling end), not solved yet.</li>
+    <li>Pick any loop tile and spread outward through its marked neighbours, noting every tile you reach. (This is a <em>flood fill</em>.)</li>
+    <li>If you reached every loop tile, it is all one connected piece.</li>
+    <li>Every tile degree exactly two <strong>and</strong> all one piece &rArr; one closed cycle &rArr; solved.</li>
+  </ol>
+
+  <aside class="callout">
+    <span class="tag">Hex grid note</span>
+    Step 5 is a flood fill &mdash; the same idea as <code>Hex.FloodFill</code>: start at a tile, queue its neighbours, then <em>their</em> neighbours, and so on, collecting everything connected.
+  </aside>
+
+  <aside class="callout warn">
+    <span class="tag">One last split</span>
+    <em>Which way</em> the loop flows (clockwise or anticlockwise) is a separate question from <em>whether</em> it is closed. Direction only matters for the gear rule, and it only makes sense once the loop is shut.
+  </aside>
+
+  <!-- ==================== 7 ==================== -->
+  <h2 id="s7">7. Glossary</h2>
+  <dl class="glossary">
+    <dt>Node (vertex)</dt>
+    <dd>A dot. Here, a tile.</dd>
+    <dt>Edge</dt>
+    <dd>A line between two nodes. Here, the adjacency between two neighbouring tiles.</dd>
+    <dt>Adjacent</dt>
+    <dd>Joined by an edge.</dd>
+    <dt>Degree</dt>
+    <dd>The number of edges touching a node.</dd>
+    <dt>Walk</dt>
+    <dd>A stroll along edges from node to node.</dd>
+    <dt>Path</dt>
+    <dd>A walk that never repeats a node.</dd>
+    <dt>Cycle</dt>
+    <dd>A closed path &mdash; it ends where it began.</dd>
+    <dt>Connected</dt>
+    <dd>You can reach any node from any other by walking along edges.</dd>
+    <dt>Flood fill</dt>
+    <dd>Spreading from a start node to every reachable node, layer by layer.</dd>
+  </dl>
+
+  <footer>
+    Companion to the Interchained loop subsystem. Concepts only &mdash; no implementation is described here. The aim is to prepare you to read the code, not to reproduce it.
+  </footer>
+
+</div>
+
+<script>
+(function(){
+  var S3 = Math.sqrt(3);
+  var OFF = [[1,0],[1,-1],[0,-1],[-1,0],[-1,1],[0,1]];
+  var ACTIVE = {loop:true, focus:true};
+  var SVGNS = "http://www.w3.org/2000/svg";
+
+  function key(q,r){ return q + "," + r; }
+  function px(q,r){ return { x: S3 * (q + r/2), y: 1.5 * r }; }
+  function isAdj(a,b){
+    var dq = b.q - a.q, dr = b.r - a.r;
+    for (var i=0;i<6;i++){ if (OFF[i][0]===dq && OFF[i][1]===dr) return true; }
+    return false;
+  }
+  function polyPoints(cx,cy){
+    var p = [];
+    for (var i=0;i<6;i++){
+      var a = Math.PI/180 * (60*i + 30);
+      p.push((cx + Math.cos(a)).toFixed(3) + "," + (cy + Math.sin(a)).toFixed(3));
+    }
+    return p.join(" ");
+  }
+  function el(name, attrs){
+    var e = document.createElementNS(SVGNS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    return e;
+  }
+
+  function render(figure, spec){
+    var tiles = spec.tiles || [];
+    var map = {};
+    tiles.forEach(function(t){ map[key(t.q,t.r)] = t; });
+
+    var active = tiles.filter(function(t){ return ACTIVE[t.role]; });
+
+    // edges between adjacent active tiles
+    var edges = [];
+    for (var i=0;i<active.length;i++){
+      for (var j=i+1;j<active.length;j++){
+        if (isAdj(active[i], active[j])) edges.push([active[i], active[j]]);
+      }
+    }
+
+    // degree per active tile
+    var deg = {};
+    active.forEach(function(t){ deg[key(t.q,t.r)] = 0; });
+    edges.forEach(function(e){
+      deg[key(e[0].q,e[0].r)]++;
+      deg[key(e[1].q,e[1].r)]++;
+    });
+
+    // bounding box
+    var minX=1e9, minY=1e9, maxX=-1e9, maxY=-1e9;
+    tiles.forEach(function(t){
+      var c = px(t.q,t.r);
+      minX = Math.min(minX, c.x-1.05); maxX = Math.max(maxX, c.x+1.05);
+      minY = Math.min(minY, c.y-1.05); maxY = Math.max(maxY, c.y+1.05);
+    });
+    var w = maxX-minX, h = maxY-minY;
+
+    var svg = el("svg", {
+      viewBox: (minX.toFixed(2) + " " + minY.toFixed(2) + " " + w.toFixed(2) + " " + h.toFixed(2)),
+      "aria-hidden": "true"
+    });
+
+    // edges first (so tiles draw over them)
+    edges.forEach(function(e){
+      var a = px(e[0].q,e[0].r), b = px(e[1].q,e[1].r);
+      svg.appendChild(el("line", { class:"edge", x1:a.x.toFixed(3), y1:a.y.toFixed(3), x2:b.x.toFixed(3), y2:b.y.toFixed(3) }));
+    });
+
+    // tiles
+    tiles.forEach(function(t){
+      var c = px(t.q,t.r);
+      svg.appendChild(el("polygon", { class:"hex " + (t.role || "tile"), points: polyPoints(c.x,c.y) }));
+    });
+
+    // labels
+    tiles.forEach(function(t){
+      if (t.label === undefined) return;
+      var c = px(t.q,t.r);
+      var text = (t.label === "auto") ? String(deg[key(t.q,t.r)] || 0) : String(t.label);
+      if (text === "") return;
+      var cls = "lbl" + (t.role === "focus" ? " warn" : "");
+      var tx = el("text", { class:cls, x:c.x.toFixed(3), y:(c.y + 0.02).toFixed(3) });
+      tx.textContent = text;
+      svg.appendChild(tx);
+    });
+
+    figure.insertBefore(svg, figure.firstChild);
+  }
+
+  document.querySelectorAll("figure.diagram").forEach(function(figure){
+    var script = figure.querySelector('script[type="application/json"]');
+    if (!script) return; // leave hand-authored SVGs untouched
+    var spec;
+    try { spec = JSON.parse(script.textContent); }
+    catch (err){ console.error("Bad diagram spec", err, script.textContent); return; }
+    render(figure, spec);
+  });
+})();
+</script>
+</body>
+</html>

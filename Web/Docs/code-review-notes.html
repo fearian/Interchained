@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reading Interchained &mdash; A Code Review</title>
+<style>
+  :root{
+    --ink:#1a1f29; --mute:#5b6470; --accent:#2563eb; --warn:#dc2626;
+    --bg:#ffffff; --tint:#f5f7fa; --line:#e3e7ee; --good:#16a34a;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font:17px/1.65 ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap{max-width:760px; margin:0 auto; padding:0 1.25rem 4rem;}
+  header{padding:2rem 0 .5rem;}
+  header h1{font-size:2.05rem; margin:0 0 .25rem; letter-spacing:-.01em;}
+  header p.sub{color:var(--mute); margin:0; font-size:1.02rem;}
+
+  nav.toc{
+    position:sticky; top:0; z-index:5;
+    background:rgba(255,255,255,.9); backdrop-filter:blur(6px);
+    border-bottom:1px solid var(--line);
+    margin:1.4rem -1.25rem 0; padding:.6rem 1.25rem;
+    display:flex; flex-wrap:wrap; gap:.35rem 1rem; font-size:.85rem;
+  }
+  nav.toc a{color:var(--mute); text-decoration:none; white-space:nowrap;}
+  nav.toc a:hover{color:var(--accent);}
+  nav.toc .n{color:var(--accent); font-weight:700; margin-right:.25rem;}
+
+  h2{font-size:1.35rem; margin:2.3rem 0 .5rem; scroll-margin-top:3.2rem;}
+  h3{font-size:1.1rem; margin:1.6rem 0 .3rem;}
+  p{margin:.55rem 0;}
+  .lead{font-size:1.05rem;}
+  ul,ol{margin:.55rem 0; padding-left:1.35rem;}
+  li{margin:.25rem 0;}
+
+  .callout{border-left:3px solid var(--accent); background:var(--tint);
+    padding:.7rem 1rem; border-radius:0 6px 6px 0; margin:1.1rem 0; font-size:.95rem;}
+  .callout.warn{border-left-color:var(--warn);}
+  .callout.good{border-left-color:var(--good);}
+  .callout strong{color:var(--accent);}
+  .callout.warn strong{color:var(--warn);}
+  .callout.good strong{color:var(--good);}
+  .callout .tag{display:block; font-size:.72rem; letter-spacing:.05em; text-transform:uppercase;
+    color:var(--accent); margin-bottom:.2rem; font-weight:700;}
+  .callout.warn .tag{color:var(--warn);}
+  .callout.good .tag{color:var(--good);}
+
+  code{background:var(--tint); padding:.1rem .35rem; border-radius:4px;
+    font-size:.86em; font-family:ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;}
+
+  .pull{border-left:3px solid var(--accent); padding:.2rem 0 .2rem 1rem;
+    margin:1.1rem 0; font-size:1.05rem;}
+
+  /* code snapshots */
+  .snapshot{background:var(--tint); border-left:3px solid var(--mute);
+    border-radius:0 6px 6px 0; padding:.7rem 1rem; margin:1rem 0; overflow-x:auto;}
+  .snapshot.good{border-left-color:var(--good);}
+  .snapshot.bad{border-left-color:var(--warn);}
+  .snapshot .tag{display:block; font-size:.72rem; letter-spacing:.05em; text-transform:uppercase;
+    font-weight:700; margin-bottom:.4rem; color:var(--mute);}
+  .snapshot.bad .tag{color:var(--warn);}
+  .snapshot.good .tag{color:var(--good);}
+  .snapshot pre{margin:0; padding:0; font:13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    white-space:pre; color:var(--ink); background:transparent;}
+  .snapshot pre .com{color:var(--mute); font-style:italic;}
+  .snapshot pre .key{color:#7c3aed;}
+  .snapshot pre .str{color:#16a34a;}
+  .snapshot pre .hi{background:rgba(37,99,235,.16); border-radius:2px; padding:.05rem 0;}
+
+  /* side-by-side load-path diff */
+  .diffpair{display:grid; grid-template-columns:1fr 1fr; gap:.8rem; margin:1.2rem 0;}
+  @media(max-width:540px){.diffpair{grid-template-columns:1fr;}}
+  .diffcol{background:var(--tint); border:1px solid var(--line); border-radius:6px; overflow:hidden;}
+  .diffcol h4{margin:0; padding:.45rem .75rem; background:#eef2f7;
+    border-bottom:1px solid var(--line); font-size:.82rem; color:var(--mute);}
+  .diffcol pre{margin:0; padding:.7rem; font:12.5px/1.5 ui-monospace, Menlo, Consolas, monospace;
+    white-space:pre-wrap; word-break:break-word;}
+  .diffcol pre .shared{background:rgba(37,99,235,.14); border-radius:2px; display:inline-block; width:100%;}
+  .diffcol pre .unique{background:rgba(220,38,38,.12); border-radius:2px; display:inline-block; width:100%;}
+
+  /* rename table */
+  table.renames{border-collapse:collapse; width:100%; margin:1rem 0; font-size:.92rem;}
+  table.renames th, table.renames td{border:1px solid var(--line); padding:.5rem .7rem; text-align:left; vertical-align:top;}
+  table.renames th{background:var(--tint); font-size:.8rem; color:var(--mute); font-weight:700;
+    text-transform:uppercase; letter-spacing:.04em;}
+  table.renames code{font-size:.85em;}
+
+  /* dependency sketch */
+  .depsketch{background:var(--tint); border:1px solid var(--line); border-radius:6px;
+    padding:.9rem 1rem; font:13px/1.55 ui-monospace, Menlo, Consolas, monospace;
+    white-space:pre; overflow-x:auto; margin:1.2rem 0; color:var(--ink);}
+  .depsketch .node{color:var(--accent); font-weight:700;}
+  .depsketch .hot{color:var(--warn); font-weight:700;}
+
+  /* glossary */
+  dl.glossary{margin:1rem 0;}
+  dl.glossary .group{font-size:.78rem; letter-spacing:.06em; text-transform:uppercase;
+    color:var(--mute); margin:1.4rem 0 .3rem; font-weight:700; border-bottom:1px solid var(--line); padding-bottom:.3rem;}
+  dl.glossary dt{font-weight:700; margin-top:.7rem;}
+  dl.glossary dd{margin:.05rem 0 0; color:var(--ink);}
+  dl.glossary dd .see{color:var(--mute); font-size:.88em;}
+
+  footer{margin-top:3rem; color:var(--mute); font-size:.85rem;
+    border-top:1px solid var(--line); padding-top:1rem;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <h1>Reading Interchained</h1>
+    <p class="sub">A code review of the gameplay loop, written for one developer. Architecture and code quality, kept separate. Patterns and heuristics, not commandments.</p>
+  </header>
+
+  <nav class="toc">
+    <a href="#s1"><span class="n">1</span>How to read this</a>
+    <a href="#s2"><span class="n">2</span>What's working</a>
+    <a href="#s3"><span class="n">3</span>Architecture</a>
+    <a href="#s4"><span class="n">4</span>Code quality</a>
+    <a href="#s5"><span class="n">5</span>One bug today</a>
+    <a href="#s6"><span class="n">6</span>Refactor #1</a>
+    <a href="#s7"><span class="n">7</span>Refactor #2</a>
+    <a href="#s8"><span class="n">8</span>Refactor #3</a>
+    <a href="#s9"><span class="n">9</span>Where next</a>
+    <a href="#glossary"><span class="n">10</span>Glossary</a>
+  </nav>
+
+  <!-- ==================== 1 ==================== -->
+  <h2 id="s1">1. How to read this</h2>
+  <p class="lead">This is a review of the Interchained gameplay loop, written for one developer who is also the project's only reader. The goal is not to score the code &mdash; it is to surface patterns worth keeping, habits worth gently nudging, and a small handful of refactors that each teach a useful idea.</p>
+
+  <p>Two reviews happened in parallel. One looked at the <strong>architecture</strong>: how the game is organised, where logic lives, what would be hard to extend. The other looked at the <strong>code quality</strong>: names, duplication, method shape. They are deliberately kept separate. A codebase can be cleanly written inside a broken architecture, and vice versa; mixing the two critiques muddies both.</p>
+
+  <p>Throughout, we lean on Martin Fowler's <em>code smells</em> (from chapter 3 of <em>Refactoring</em>). A smell is a <strong>heuristic</strong> &mdash; a labelled hint that something might be worth a second look. It is never a hard rule. The bar for acting on a smell is: <em>does this actually hurt readability or maintainability, here, in this small project?</em> If not, leave it.</p>
+
+  <aside class="callout">
+    <span class="tag">Project context</span>
+    Interchained is a Unity puzzle game with one beginner developer. It is a learning environment first, a shipped product second. Every recommendation here has to clear the &ldquo;doesn't overcomplicate&rdquo; bar. No frameworks, no enterprise patterns, no abstractions for their own sake.
+  </aside>
+
+  <!-- ==================== 2 ==================== -->
+  <h2 id="s2">2. What's already working</h2>
+  <p>Before any review, it helps to name what is working. These patterns are the project's strengths, and new code should build on them rather than around them.</p>
+
+  <ul>
+    <li><strong>The <code>Validator</code> is a clean read-only query layer.</strong> It takes a <code>HexGrid</code>, returns <code>IEnumerable&lt;TileData&gt;</code>, mutates nothing gameplay-facing. This is the project's strongest seam, and the right place to add the planned gear-loop meshing rule.</li>
+    <li><strong>Tile view components subscribe reactively via <code>UnityEvent</code>s.</strong> <code>TileVisuals</code> listens to <code>onValueChanged</code> and <code>onLoopChanged</code>, then re-renders itself. The orchestrator never tells the view to update. This is the template every new view behaviour should follow.</li>
+    <li><strong>ScriptableObject config</strong> drives <code>BoardColors</code>, <code>TileLabels</code>, and <code>Levels</code>. Data stays out of code, palettes can be tweaked without recompiles. The foundation for a real editor flow is already there.</li>
+    <li><strong><code>HexGrid</code> is the single source of location truth.</strong> It owns the tile array and the regions; nothing else keeps its own index. O(1) <code>GetTile</code>. Don't break this.</li>
+  </ul>
+
+  <!-- ==================== 3 ==================== -->
+  <h2 id="s3">3. Architecture observations</h2>
+  <p>Ten findings. Each one names a place where the code resists change, and points at the smallest first move that would unblock it. Tags show which future feature each one touches: <code>[editor]</code> <code>[modes]</code> <code>[mechanics]</code> <code>[tutorial]</code>.</p>
+
+  <h3>3.1 <code>Interchained</code> is a god-class (~744 lines)</h3>
+  <p>The orchestrator MonoBehaviour owns input handling, the evaluation cycle, pair-assignment scoring (~170 lines of <code>CheckForPair</code>/<code>ScorePair</code> logic at <code>Interchained.cs:376</code>), loop validation dispatch, save/load orchestration, label toggling, and debug drawing. Nearly every future feature lands in this one file. <span class="tag">First move:</span> extract a <code>PairAssigner</code> &mdash; it's the most self-contained chunk and clears room for everything else. <code>[editor] [modes] [mechanics]</code></p>
+
+  <h3>3.2 <code>TileData</code> derives its identity from the transform</h3>
+  <p><code>TileData</code> extends <code>Node</code>, and <code>Node.cs:15</code> derives <code>hex</code> from <code>transform.position</code>. So a tile's <em>logical</em> identity depends on its <em>view</em> transform. The class also carries <code>UnityEvent</code>s and a <code>ParticleSystem</code> <code>SerializeField</code>. Hidden tiles, animations, or headless tests all fight the transform coupling. <span class="tag">First move:</span> keep it a MonoBehaviour (converting to a POCO isn't worth it for one beginner), but stop deriving <code>hex</code> from the transform &mdash; store axial coords as a serialised field set at instantiation. <code>[mechanics] [tutorial]</code></p>
+
+  <h3>3.3 Two sources of truth for tile validity</h3>
+  <p><code>invalidTiles</code> (the HashSet) and each tile's <code>IsInvalid</code> flag are updated together but can drift. For instance, <code>ClearTile</code> sets <code>IsInvalid = false</code> but leaves the tile in the set until the next <code>ReevaluateInvalidTiles</code>. <span class="tag">First move:</span> pick one as the truth. Either make <code>IsInvalid</code> the only state and derive the set by scan, or route every mutation through <code>MarkAsInvalid</code>/<code>MarkAsValid</code> so set membership stays in lockstep. <code>[modes]</code></p>
+
+  <h3>3.4 Pair logic has no home</h3>
+  <p><code>Interchained.cs:356</code> manipulates pairs by directly calling <code>RemovePair</code>/<code>SetPairedTile</code> across two tiles, and the scoring heuristics live as a local function inside the orchestrator. Pair rules are a gameplay mechanic with nowhere to live, so they accrete orchestrator code. <span class="tag">First move:</span> move <code>CheckForPair</code>/<code>ScorePair</code> into a <code>PairAssigner</code> class that takes the grid; <code>TileData</code> keeps only the pair-link primitives. <code>[mechanics]</code></p>
+
+  <h3>3.5 Bit-packed save format has no owner</h3>
+  <p>The save format is documented in <code>SaveLoad.cs:20</code>, encoded in <code>SaveLoad.ToBoardData1D</code>, and decoded in <code>HexGrid.SetBoard:157</code>. Adding a new flag (say, hidden tiles &mdash; bit 8 is already reserved but commented out) touches all three. <span class="tag">First move:</span> centralise encode/decode as <code>TileData.Encode()</code>/<code>Decode(int)</code> so the format lives next to the state it describes. <code>[editor] [mechanics]</code></p>
+
+  <h3>3.6 <code>LoopNode.IsValid</code> has a logic bug</h3>
+  <p>See <a href="#s5">section 5</a>. Short version: the operator is wrong, so the validity gate doesn't gate anything. <code>[mechanics] [modes]</code></p>
+
+  <h3>3.7 <code>LoopDrawer</code> owns state it shouldn't</h3>
+  <p><code>LoopDrawer</code> constructs its own <code>Validator</code> (separate from the orchestrator's), stores a stale <code>possibleLoopTiles</code> array across calls, and writes to <code>TileData.LoopIn</code>/<code>LoopOut</code> directly via public fields. As the loop subsystem is re-enabled, these become drift surfaces. <span class="tag">First move:</span> inject the shared <code>Validator</code>, clear <code>possibleLoopTiles</code> at the top of <code>SortLoopTiles</code>, encapsulate <code>LoopIn</code>/<code>LoopOut</code> behind setters (see <a href="#s8">refactor #3</a>). <code>[mechanics]</code></p>
+
+  <h3>3.8 The win condition is hardcoded with no seam</h3>
+  <p><code>IsSolved()</code> at <code>Interchained.cs:643</code> is just <code>invalidTiles.Count == 0</code>. AGENTS.md correctly identifies that the canonical check is &ldquo;the loop is closed&rdquo;. New game modes &mdash; different win conditions &mdash; have nowhere to plug in. <span class="tag">First move:</span> a one-method <code>IWinCondition</code> interface (or even a <code>Func&lt;HexGrid, LoopGraph, bool&gt;</code>) field on <code>Interchained</code>, swapped per mode. A strategy seam, not a framework. <code>[modes]</code></p>
+
+  <h3>3.9 <code>GameManager</code> is an underused singleton</h3>
+  <p><code>GameManager</code> has <code>WaitingToStart</code>/<code>GamePlaying</code>/<code>GameOver</code> states, but <code>GameOver</code> is commented out, and the only consumer is <code>Interchained.cs:67</code>'s <code>IsGamePlaying()</code> gate. This is the natural home for mode wiring and the win&rarr;celebration transition. <span class="tag">First move:</span> route win detection through <code>GameManager</code> (it already has <code>OnStateChanged</code>), making it the single state owner. <code>[modes]</code></p>
+
+  <h3>3.10 Input is read inline</h3>
+  <p><code>AcceptInput</code> at <code>Interchained.cs:65</code> polls <code>Input.*</code> directly. A tutorial that wants to gate, replay, or scripted-feed input has no seam; same for an undo system. <span class="tag">First move:</span> a tiny <code>InputActions</code> struct (<code>CycleUp</code>/<code>CycleDown</code>/<code>Set</code>/<code>MarkLoop</code>/<code>Clear</code>) populated from <code>Input</code> now, swappable later. Not a full command system &mdash; just a seam. <code>[tutorial]</code></p>
+
+  <aside class="callout">
+    <span class="tag">The shape of the problem</span>
+    A rough sketch of who depends on whom, today. <code>Interchained</code> sits at the centre; everything else fans out from it.
+  </aside>
+
+  <pre class="depsketch">                     <span class="hot">Interchained.cs  (744 lines)</span>
+                            |
+       +--------------------+--------------------+----------------+-----------+
+       |                    |                    |                |           |
+   <span class="node">Validator</span>          <span class="node">HexGrid</span>            <span class="node">TileData</span>        <span class="node">LoopDrawer</span>   <span class="node">SaveLoad</span>
+   (pure queries)      (tiles + regions)    (state + events)   (walk + draw)  (bit-pack)
+                            |                    ^
+                            +--------------------+-- LoopDrawer writes TileData.LoopIn/LoopOut
+                                                 directly (public fields)</pre>
+
+  <!-- ==================== 4 ==================== -->
+  <h2 id="s4">4. Code quality observations</h2>
+
+  <h3>4.1 The style guide, as inferred from the code</h3>
+  <p>The project does not have a written style guide, but it does have <em>habits</em>. Reading the gameplay loop, these conventions show up consistently enough to treat as the de-facto baseline:</p>
+  <ul>
+    <li><strong>Private fields</strong>: inconsistent. Underscore prefix for &ldquo;service&rdquo; dependencies (<code>_validator</code>, <code>_loopDrawer</code>, <code>_hexGrid</code>), no prefix for state (<code>invalidTiles</code>, <code>hexGrid</code>, <code>possibleLoopTiles</code>). Public inspector fields are unprefixed.</li>
+    <li><strong>Naming</strong>: PascalCase for public methods and properties; camelCase for locals and parameters; type names PascalCase. <code>UnityEvent</code> fields use <code>onXxx</code>.</li>
+    <li><strong>Validator query idiom</strong>: <code>IEnumerable&lt;TileData&gt;</code> lazy-yielding offending tiles, used both as a boolean (<code>.Count() != 0</code>) and as a list. This is the project's central validation pattern.</li>
+    <li><strong>State mutation</strong>: through <code>Mark*(value)</code> methods on <code>TileData</code>, which fire <code>onValueChanged</code>/<code>onLoopChanged</code>. Direct field writes are reserved for <code>MarkBlocker</code>/<code>ClearTile</code> internals.</li>
+    <li><strong>Unity inspector</strong>: <code>[SerializeField] private</code> for dependencies, <code>public</code> for things wired in the inspector. <code>#if UNITY_EDITOR</code> guards gizmos.</li>
+    <li><strong>Organisation</strong>: <code>#region</code> blocks group the orchestrator by responsibility.</li>
+    <li><strong>Domain values</strong>: <code>int Value</code> discriminated via boolean properties (<code>IsEmpty</code>/<code>IsNumber</code>/<code>IsGear</code>/<code>IsBlocker</code>); modern C# pattern matching (<code>is 8 or 9</code>).</li>
+  </ul>
+
+  <h3>4.2 Smell findings (brief)</h3>
+  <p>Each smell below has at least one genuine instance in the gameplay loop. Full quotes and code samples appear in the refactor sections where relevant; the rest are signposts for your own reading.</p>
+
+  <p><strong><a href="#g-mysterious">Mysterious Name</a></strong> &mdash; <code>SortLoopTiles</code> doesn't sort (<code>LoopDrawer.cs:41</code>); <code>EvaluateLoopTiles</code> has a caching side effect (<code>LoopDrawer.cs:26</code>); <code>msg</code> controls debug output and is always <code>true</code> (<code>Interchained.cs:376, 534</code>); <code>PassesPlacementEval</code> is a PascalCase local that's still loop-rechecked (<code>Interchained.cs:254</code>); <code>FindInAdjacent</code> reads backwards (<code>Validator.cs:142</code>). See <a href="#s7">refactor #2</a>.</p>
+
+  <p><strong><a href="#g-duplication">Duplicated Code</a></strong> &mdash; <code>LoadBoardState</code> vs <code>LoadClipboard</code> are ~95% identical (<code>Interchained.cs:660</code>); the number vs gear branches of <code>ValidatePlacement</code> share a shape (<code>Interchained.cs:312</code>); <code>IsDuplicatedAlongAxis</code> / <code>IsDuplicatedInRegion</code> share a count-and-yield-self shape (<code>Validator.cs:37</code>). See <a href="#s6">refactor #1</a>.</p>
+
+  <p><strong><a href="#g-feature-envy">Feature Envy</a></strong> &mdash; <code>AssignPairs</code>/<code>CheckForPair</code> (<code>Interchained.cs:342</code>) reads <code>tile.IsMarkedForLoop</code>, <code>tile.pairedTile</code>, <code>tile.IsInvalid</code>, mutates pairs through three <code>TileData</code> methods, and scores tile-to-tile relationships via a nested local function. The orchestrator envies <code>TileData</code>'s data.</p>
+
+  <p><strong><a href="#g-primitive">Primitive Obsession</a></strong> &mdash; <code>int Value</code> on <code>TileData</code> packs five domain concepts (empty / domino 1&ndash;6 / solo 7 / gears 8&ndash;9 / blocker 10); all consumers re-derive kind via <code>Is*</code> switches. Plus magic sentinels <code>bestScore = -99</code> / <code>lowestOtherScore = 99</code> (<code>Interchained.cs:404, 456</code>) and the repeated cast <code>(int)region - 1</code> (<code>Validator.cs:65</code>).</p>
+
+  <p><strong><a href="#g-switches">Repeated Switches</a></strong> &mdash; the <code>IsNumber</code>/<code>IsGear</code>/<code>IsBlocker</code> dispatch cascade recurs in <code>ReevaluateInvalidTiles</code>, <code>ValidatePlacement</code>, and <code>ValidateIsOnLoop</code>. Each re-implements &ldquo;find offenders + flag&rdquo;. (Don't reach for polymorphism here &mdash; overkill for this project. See refactor #1.)</p>
+
+  <p><strong><a href="#g-divergent">Divergent Change</a></strong> &mdash; <code>Interchained.cs</code> is edited for unrelated reasons: input, evaluation, save/load, label toggling, gizmos. Also <code>HexGrid.cs</code> mixes grid storage, region storage, bit-packing decode, and debug text &mdash; plus <code>DebugUtils</code> is defined at the bottom of the same file.</p>
+
+  <p><strong><a href="#g-speculative">Speculative Generality</a></strong> &mdash; <code>LoopGraph.FindPathDFS</code> / <code>FindPathBFS</code> / <code>HasCycle</code> (<code>LoopGraph.cs:117</code>) are <code>NotImplementedException</code> stubs; <code>Link.IsDirectional</code>/<code>FlipDirection</code> are built but never used with <code>isDirectional = true</code>; <code>BiasCone</code>'s <code>width</code> param is documented as TODO (<code>Hex.cs:116</code>); the four named region fields <code>_regionNorth/East/South/West</code> are only ever read via the <code>Regions[]</code> array.</p>
+
+  <p><strong><a href="#g-middle-man">Middle Man</a></strong> &mdash; <code>HexGrid.GetGridArray()</code> exposes the private array, defeating the <code>GetTile()</code> indirection. Callers (<code>CheckBoard</code>, <code>ToggleTileLabels</code>) reach in directly and re-implement iteration. Two parallel access paths.</p>
+
+  <p><em>Notable absentees:</em> Shotgun Surgery (changes are mostly local), Message Chains (no long <code>a.b().c().d()</code> walks), Refused Bequest (no subclass rejecting its parent), Data Clumps (parameters are mostly single tiles or self-contained).</p>
+
+  <!-- ==================== 5 ==================== -->
+  <h2 id="s5">5. One bug worth fixing today</h2>
+  <p>Tucked into <code>LoopNode.cs:10</code> is a one-line bug that silently undermines a load-bearing check:</p>
+
+  <div class="snapshot bad">
+    <span class="tag">LoopNode.cs &mdash; current</span>
+    <pre><span class="key">public bool</span> IsValid
+{
+    <span class="key">get</span> { <span class="key">return</span> (Links.Count &lt;= 2 || Links.Count &gt;= 1); }
+}</pre>
+  </div>
+
+  <p>The intent is plainly &ldquo;a valid loop node has 1 or 2 links&rdquo;. But <code>&lt;= 2 OR &gt;= 1</code> is true for <em>every</em> integer. Zero links: <code>0 &lt;= 2</code> is true. Five links: <code>5 &gt;= 1</code> is true. The gate never trips.</p>
+
+  <div class="snapshot good">
+    <span class="tag">LoopNode.cs &mdash; fix</span>
+    <pre><span class="key">public bool</span> IsValid
+{
+    <span class="key">get</span> { <span class="key">return</span> Links.Count &gt;= 1 &amp;&amp; Links.Count &lt;= 2; }
+}</pre>
+  </div>
+
+  <aside class="callout warn">
+    <span class="tag">Why this matters</span>
+    <code>LoopGraph.IsValid()</code> is built on this property. With the bug, the whole graph-validity check passes no matter what &mdash; which means the planned gear-loop meshing rule and the canonical &ldquo;loop is closed&rdquo; win condition would silently accept any shape. Fix the operator, and the rest of the loop subsystem has solid ground to stand on.
+  </aside>
+
+  <!-- ==================== 6 ==================== -->
+  <h2 id="s6">6. Refactor #1 &mdash; Extract the shared shape</h2>
+  <p class="lead"><strong>Smells addressed:</strong> <a href="#g-duplication">Duplicated Code</a>, <a href="#g-switches">Repeated Switches</a>. <strong>Risk:</strong> very low. <strong>Behaviour change:</strong> none.</p>
+
+  <p>The most common smell in the gameplay loop is also the most fundamental: the same shape of code, written twice. Two places stand out.</p>
+
+  <h3>6.1 The two load paths</h3>
+  <p><code>LoadBoardState</code> and <code>LoadClipboard</code> are nearly identical. Below, the <span class="shared" style="background:rgba(37,99,235,.14); padding:0 .2rem; border-radius:2px;">blue</span> lines are the shape they share; the <span class="unique" style="background:rgba(220,38,38,.12); padding:0 .2rem; border-radius:2px;">red</span> lines are the only thing that differs (where the board data comes from).</p>
+
+  <div class="diffpair">
+    <div class="diffcol">
+      <h4>LoadBoardState (Interchained.cs:660)</h4>
+<pre><span class="unique">Debug.Log($"Loading {name}");
+var boardState = saveLoadHandler.LoadLevel(name);</span>
+<span class="shared">if (boardState == null)
+{
+    Debug.Log("BAD BOARD STATE ABOORT");
+    return;
+}
+ClearGameState();
+hexGrid.SetBoard(boardState);
+puzzleInfoField.text = "&lt;b&gt;" + boardState.Name
+    + "&lt;/b&gt;\n" + boardState.Description;
+CheckBoard();
+onLevelLoaded.Invoke();</span></pre>
+    </div>
+    <div class="diffcol">
+      <h4>LoadClipboard (Interchained.cs:683)</h4>
+<pre><span class="unique">var boardState = saveLoadHandler.PasteFromClipboard();</span>
+<span class="shared">if (boardState == null)
+{
+    Debug.Log("BAD BOARD STATE ABOORT");
+    return;
+}
+ClearGameState();
+hexGrid.SetBoard(boardState);
+puzzleInfoField.text = "&lt;b&gt;" + boardState.Name
+    + "&lt;/b&gt;\n" + boardState.Description;
+CheckBoard();
+onLevelLoaded.Invoke();</span></pre>
+    </div>
+  </div>
+
+  <p>Almost every line is shared. The fix is the simplest move in refactoring: <strong>name the shape, then call it from both places</strong>.</p>
+
+  <div class="snapshot good">
+    <span class="tag">After &mdash; one helper, two one-line callers</span>
+    <pre><span class="key">private void</span> ApplyBoardState(BoardData1D&lt;<span class="key">int</span>&gt; boardState)
+{
+    <span class="key">if</span> (boardState == <span class="key">null</span>)
+    {
+        Debug.Log(<span class="str">"BAD BOARD STATE"</span>);
+        <span class="key">return</span>;
+    }
+    ClearGameState();
+    hexGrid.SetBoard(boardState);
+    puzzleInfoField.text = <span class="str">"&lt;b&gt;"</span> + boardState.Name
+        + <span class="str">"&lt;/b&gt;\n"</span> + boardState.Description;
+    CheckBoard();
+    onLevelLoaded.Invoke();
+}
+
+<span class="key">public void</span> LoadBoardState(<span class="key">string</span> name = <span class="str">""</span>)
+{
+    Debug.Log($<span class="str">"Loading {name}"</span>);
+    ApplyBoardState(saveLoadHandler.LoadLevel(name));
+}
+
+<span class="key">public void</span> LoadClipboard()
+{
+    ApplyBoardState(saveLoadHandler.PasteFromClipboard());
+}</pre>
+  </div>
+
+  <h3>6.2 The two validation branches</h3>
+  <p>The same pattern shows up inside <code>ValidatePlacement</code>. The <code>IsNumber</code> branch and the <code>IsGear</code> branch share an identical tail &mdash; &ldquo;collect offenders, mark each invalid, draw a red line, add to tracking&rdquo;.</p>
+
+  <div class="snapshot bad">
+    <span class="tag">Interchained.cs:312 &mdash; the repeated tail</span>
+    <pre><span class="key">var</span> combined = axis.Union(region);
+<span class="key">foreach</span> (<span class="key">var</span> invalidTile <span class="key">in</span> combined)
+{
+    invalidTile.MarkAsInvalid(<span class="key">true</span>);
+    Debug.DrawLine(tile.hex.ToWorld(), invalidTile.hex.ToWorld(), Color.red, 1f);
+    invalidTiles.Add(invalidTile);
+}
+<span class="com">// ...and the same shape again, verbatim, in the IsGear branch</span></pre>
+  </div>
+
+  <div class="snapshot good">
+    <span class="tag">After &mdash; one FlagOffendingTiles helper</span>
+    <pre><span class="key">private void</span> FlagOffendingTiles(TileData source, IEnumerable&lt;TileData&gt; offenders)
+{
+    <span class="key">foreach</span> (<span class="key">var</span> offender <span class="key">in</span> offenders)
+    {
+        offender.MarkAsInvalid(<span class="key">true</span>);
+        Debug.DrawLine(source.hex.ToWorld(), offender.hex.ToWorld(), Color.red, 1f);
+        invalidTiles.Add(offender);
+    }
+}</pre>
+  </div>
+
+  <p>Each branch of <code>ValidatePlacement</code> now ends with one line: <code>FlagOffendingTiles(tile, axis.Union(region));</code> for numbers, <code>FlagOffendingTiles(tile, neighbours.Union(region));</code> for gears.</p>
+
+  <aside class="callout">
+    <span class="tag">Lesson</span>
+    The most fundamental refactoring move is <strong>naming the shape</strong>. When you see two blocks of code that look the same, the right question is not &ldquo;how do I make them shorter?&rdquo; but &ldquo;<em>what is this for?</em>&rdquo; Once you can name it (<code>ApplyBoardState</code>, <code>FlagOffendingTiles</code>), you can call it. The code gets shorter as a side effect &mdash; the real win is that the reader now sees intent.
+  </aside>
+
+  <!-- ==================== 7 ==================== -->
+  <h2 id="s7">7. Refactor #2 &mdash; Rename to match behaviour</h2>
+  <p class="lead"><strong>Smell addressed:</strong> <a href="#g-mysterious">Mysterious Name</a>. <strong>Risk:</strong> none (pure renames). <strong>Behaviour change:</strong> none.</p>
+
+  <p>A function whose name resists being honest usually sits in the wrong place, or does too much, or has a side effect it shouldn't. The diagnostic question is simple: <em>if you told a teammate this name, would they guess correctly what the function does?</em></p>
+
+  <table class="renames">
+    <thead>
+      <tr><th>Current name</th><th>Rename to</th><th>Why</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>SortLoopTiles</code><br><span style="color:var(--mute); font-size:.82rem;">LoopDrawer.cs:41</span></td>
+        <td><code>BuildLoopGraph</code></td>
+        <td>Doesn't sort. Builds a graph of loop tiles &mdash; that's what the body actually does, and what AGENTS.md already calls it.</td>
+      </tr>
+      <tr>
+        <td><code>EvaluateLoopTiles</code><br><span style="color:var(--mute); font-size:.82rem;">LoopDrawer.cs:26</span></td>
+        <td><code>TryCacheLoopTiles</code></td>
+        <td>Name implies a pure query, but the method caches <code>possibleLoopTiles</code> as a side effect. The new name says so.</td>
+      </tr>
+      <tr>
+        <td><code>msg</code><br><span style="color:var(--mute); font-size:.82rem;">Interchained.cs:376, 534</span></td>
+        <td><code>showDebug</code><br><span style="color:var(--mute); font-size:.82rem;">or just delete</span></td>
+        <td>Opaque. Always passed <code>true</code> at every call site anyway &mdash; the <code>if (msg)</code> branches gate nothing. Either rename and mean it, or remove the parameter entirely.</td>
+      </tr>
+      <tr>
+        <td><code>PassesPlacementEval</code><br><span style="color:var(--mute); font-size:.82rem;">Interchained.cs:254</span></td>
+        <td><code>candidateTiles</code></td>
+        <td>A PascalCase local (style break), and slightly misleading: tiles in this list still get re-checked for loop status. They're candidates, not passers.</td>
+      </tr>
+      <tr>
+        <td><code>FindInAdjacent</code><br><span style="color:var(--mute); font-size:.82rem;">Validator.cs:142</span></td>
+        <td><code>AdjacentOf</code></td>
+        <td>Reads as &ldquo;find X in adjacent cells&rdquo;. What it actually does: filter <code>targets</code> down to those adjacent to <code>tile</code>. <code>AdjacentOf</code> says that out loud.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <aside class="callout">
+    <span class="tag">Lesson</span>
+    Renaming is the cheapest refactor with the highest readability payoff. When a name resists being honest &mdash; when no truthful verb-noun pair comes to mind &mdash; that's a signal, not a vocabulary problem. It usually means the function is doing two things, or sitting on the wrong class, or carrying a side effect. <strong>The murky name is the design trying to tell you something.</strong>
+  </aside>
+
+  <!-- ==================== 8 ==================== -->
+  <h2 id="s8">8. Refactor #3 &mdash; Encapsulate TileData loop state</h2>
+  <p class="lead"><strong>Smells addressed:</strong> <a href="#g-feature-envy">Feature Envy</a> (in reverse), coupling risk. <strong>Risk:</strong> low. <strong>Behaviour change:</strong> events fire correctly where they currently don't.</p>
+
+  <p>Five loop-related fields live directly on <code>TileData</code>:</p>
+
+  <div class="snapshot bad">
+    <span class="tag">TileData.cs:27 &mdash; public mutable fields</span>
+    <pre><span class="key">public</span> LoopNode LoopNode { <span class="key">get</span>; <span class="key">private set</span>; }
+<span class="key">public bool</span> IsMarkedForLoop { <span class="key">get</span>; <span class="key">private set</span>; }
+<span class="key">public</span> TileData LoopIn;     <span class="com">// &lt;-- public mutable</span>
+<span class="key">public</span> TileData LoopOut;    <span class="com">// &lt;-- public mutable</span>
+<span class="key">public bool</span> IsOnLoopIncorrectly { <span class="key">get</span>; <span class="key">private set</span>; }</pre>
+  </div>
+
+  <p>The two problem children are <code>LoopIn</code> and <code>LoopOut</code>. They're public mutable fields, written directly by <code>LoopDrawer.TryToDrawLoop</code>:</p>
+
+  <div class="snapshot bad">
+    <span class="tag">LoopDrawer.cs:90 &mdash; orchestrator mutates model internals</span>
+    <pre>tileData.LoopIn = adjacentSteps[0];
+tileData.LoopOut = adjacentSteps[1];
+<span class="com">// ...later...</span>
+adjacentTile.LoopIn = tileData;</pre>
+  </div>
+
+  <p>This is a coupling problem with three teeth:</p>
+  <ol>
+    <li><strong>No invariant is enforced.</strong> <code>LoopIn</code> and <code>LoopOut</code> are meant to come in pairs, but nothing stops one from being set without the other.</li>
+    <li><strong>No event fires.</strong> The other three loop fields trigger <code>onLoopChanged</code> when they change. <code>LoopIn</code>/<code>LoopOut</code> silently don't, so view components can't react.</li>
+    <li><strong>Ownership is ambiguous.</strong> <code>TileData</code> stores the state, but <code>LoopDrawer</code> owns its meaning. If a third writer ever appears, they will collide.</li>
+  </ol>
+
+  <h3>Option A: encapsulate behind a setter (do this now)</h3>
+
+  <div class="snapshot good">
+    <span class="tag">TileData.cs &mdash; private fields + setter that fires events</span>
+    <pre><span class="key">private</span> TileData loopIn;
+<span class="key">private</span> TileData loopOut;
+
+<span class="key">public</span> TileData LoopIn  =&gt; loopIn;
+<span class="key">public</span> TileData LoopOut =&gt; loopOut;
+
+<span class="key">public void</span> SetLoopEndpoints(TileData <span class="key">in</span>, TileData @out)
+{
+    loopIn = <span class="key">in</span>;
+    loopOut = @out;
+    onValueChanged.Invoke();
+    <span class="key">if</span> (IsMarkedForLoop) onLoopChanged.Invoke();
+}
+
+<span class="key">public void</span> ClearLoopEndpoints()
+{
+    loopIn = <span class="key">null</span>;
+    loopOut = <span class="key">null</span>;
+}</pre>
+  </div>
+
+  <p><code>LoopDrawer</code> now calls <code>tileData.SetLoopEndpoints(a, b)</code> instead of writing the fields directly. Events fire. The pair invariant has a single chokepoint. The change is mechanical and quick.</p>
+
+  <h3>Option B: bundle into a <code>LoopMembership</code> value (defer)</h3>
+  <p>Once the gear-loop meshing rule lands, the five loop fields will start wanting to travel together &mdash; passed to validators, inspected by win conditions, serialised. At that point, bundling them into a small <code>LoopMembership</code> value type starts to pay for itself:</p>
+
+  <div class="snapshot good">
+    <span class="tag">Sketch &mdash; not for today, for when the gear-loop rule lands</span>
+    <pre><span class="com">// A small value type that owns all loop-related state together.</span>
+<span class="key">public class</span> LoopMembership
+{
+    <span class="key">public bool</span> IsMarked;
+    <span class="key">public</span> TileData LoopIn;
+    <span class="key">public</span> TileData LoopOut;
+    <span class="key">public bool</span> IsIncorrect;
+    <span class="com">// plus the methods that mutate them, in one place</span>
+}</pre>
+  </div>
+
+  <p>This is a <a href="#g-data-clumps">Data Clump</a> waiting to be born &mdash; and giving it a name early keeps the orchestrator thin.</p>
+
+  <aside class="callout">
+    <span class="tag">Lesson</span>
+    Encapsulation is not about purity. It's about <strong>making invalid state impossible to express</strong>. With public mutable fields, <code>LoopIn</code> can be set to a tile on the far side of the board while <code>LoopOut</code> is null, and nothing in the code stops you. With a setter, the rule &ldquo;endpoints come as a pair and fire an event&rdquo; lives in exactly one place &mdash; and any future bug has to go through that place to be born.
+  </aside>
+
+  <!-- ==================== 9 ==================== -->
+  <h2 id="s9">9. Where to go next</h2>
+
+  <h3>Difficult areas</h3>
+  <ul>
+    <li><strong>Pair-assignment scoring</strong> (<code>CheckForPair</code>/<code>ScorePair</code>, <code>Interchained.cs:361</code>). Dense, partially commented out, magic sentinels, no home on the data it operates over. Read it twice before changing anything.</li>
+    <li><strong>The loop subsystem in flux.</strong> <code>LoopDrawer</code> + <code>LoopGraph</code> + <code>TileData.LoopIn/LoopOut</code> are mid-rewrite. Direction assignment is unreliable, the LineRenderer walk is disabled, and <code>LoopNode.IsValid</code> is broken (section 5). Fix the bug first; stabilise direction second; only then re-enable <code>TryToDrawLoop</code>.</li>
+  </ul>
+
+  <h3>Ripe for refactor</h3>
+  <p>The three refactors in this doc, in order of value-for-effort:</p>
+  <ol>
+    <li><strong>Extract <code>ApplyBoardState</code> + <code>FlagOffendingTiles</code></strong> (section 6) &mdash; kills the most visible duplication, shrinks the god-class, zero behaviour change. An afternoon.</li>
+    <li><strong>Rename to match behaviour</strong> (section 7) &mdash; pure renames, immediate readability gain, aligns code with what AGENTS.md already calls these concepts.</li>
+    <li><strong>Encapsulate <code>TileData</code> loop state</code></strong> (section 8) &mdash; the biggest coupling risk heading into gear-loop meshing. Option A now, option B when that rule lands.</li>
+  </ol>
+
+  <h3>Good opportunities to learn</h3>
+  <ul>
+    <li><strong>Naming as design pressure.</strong> The <a href="#g-mysterious">Mysterious Name</a> findings are perfect mini-lessons. When a name resists being honest, the design is usually murky &mdash; fix the name and you often find the right shape.</li>
+    <li><strong>Single Responsibility in the small.</strong> Carving <code>SaveLoad</code> orchestration and <code>LabelToggle</code> out of <code>Interchained</code> teaches <a href="#g-divergent">Divergent Change</a> viscerally &mdash; you can <em>feel</em> the relief of a file that changes for one reason.</li>
+    <li><strong>Strategy pattern in miniature.</strong> An <code>IWinCondition</code> interface with one method is the most beginner-friendly introduction to polymorphism-as-seam. One method, one interface, swapped per game mode. Serves the future &ldquo;different game modes&rdquo; work without dragging in a framework.</li>
+    <li><strong>Encapsulation discipline.</strong> Making <code>LoopIn</code>/<code>LoopOut</code> private teaches why public mutable fields are a coupling liability. The lesson pays off before the gear-loop meshing work lands.</li>
+  </ul>
+
+  <!-- ==================== 10 ==================== -->
+  <h2 id="glossary">10. Glossary</h2>
+  <p>Terms used in this review, grouped by theme. Where a term has a glossary entry, the first use in the body of the review links here.</p>
+
+  <dl class="glossary">
+
+    <dt class="group">Architecture &amp; object-oriented design</dt>
+
+    <dt id="g-architecture">Architecture</dt>
+    <dd>The high-level shape of a codebase: which modules exist, what each one is responsible for, and which way the dependencies flow. &ldquo;Good architecture&rdquo; mostly means <em>changes stay local</em> &mdash; one feature touches one place. <span class="see">See also: coupling, cohesion, SRP.</span></dd>
+
+    <dt id="g-pattern">Pattern (design pattern)</dt>
+    <dd>A named, reusable solution shape for a recurring design problem. Patterns are vocabulary more than recipes &mdash; once you can say &ldquo;Strategy pattern&rdquo;, you and your teammate can discuss a design in one word instead of ten. Use sparingly; not every problem needs a pattern.</dd>
+
+    <dt id="g-god-class">God-class (god object)</dt>
+    <dd>A class that knows about or does too much. Tends to grow indefinitely because every new feature finds a reason to live there. <code>Interchained.cs</code> is on this path at ~744 lines. <span class="see">See also: SRP, divergent change.</span></dd>
+
+    <dt id="g-cohesion">Cohesion</dt>
+    <dd>How tightly a class's contents belong together. High cohesion: everything in the class serves one purpose. Low cohesion: the class is a junk drawer. <span class="see">Opposite of: coupling.</span></dd>
+
+    <dt id="g-coupling">Coupling</dt>
+    <dd>How much one module knows about another's internals or depends on its details. Tightly coupled modules change together, whether you want them to or not. <span class="see">See also: feature envy, message chains.</span></dd>
+
+    <dt id="g-encapsulation">Encapsulation</dt>
+    <dd>Hiding a module's internal state behind a small, intentional interface. The point isn't purity &mdash; it's <strong>making invalid state impossible to express</strong>. If a field is public and mutable, any rule about it (&ldquo;must come in a pair&rdquo;, &ldquo;must fire an event&rdquo;) is unenforceable.</dd>
+
+    <dt id="g-srp">Single Responsibility Principle (SRP)</dt>
+    <dd>A class should change for one reason. If you find yourself editing the same file for input handling, save/load, and label toggling, the file has more than one responsibility. <span class="see">Smell counterpart: divergent change.</span></dd>
+
+    <dt id="g-ssot">Single source of truth</dt>
+    <dd>One canonical place where a given piece of state lives. Everywhere else, that state is either read-only or derived. When two places each hold the truth, they drift; debugging the resulting inconsistency is miserable. <span class="see">See also: encapsulation.</span></dd>
+
+    <dt id="g-mvc">Model&ndash;View&ndash;Controller (MVC)</dt>
+    <dd>An architectural pattern that separates <em>state</em> (model), <em>display</em> (view), and <em>input handling</em> (controller). Interchained already follows this loosely: <code>TileData</code> is the model, <code>TileVisuals</code> is the view, <code>Interchained</code> is the controller. The view subscribes to the model via events &mdash; that's MVC done right.</dd>
+
+    <dt id="g-strategy">Strategy pattern</dt>
+    <dd>Define a small interface for one piece of behaviour, then swap implementations. <code>IWinCondition</code> with a single <code>IsSatisfied(...)</code> method is a strategy: a &ldquo;loop closed&rdquo; mode plugs in one implementation, a &ldquo;fill the board&rdquo; mode plugs in another. The orchestrator doesn't change. <span class="see">See also: polymorphism, seam.</span></dd>
+
+    <dt id="g-polymorphism">Polymorphism</dt>
+    <dd>The ability for different types to be treated as the same type at a calling site, each behaving differently. In C#, usually via interfaces or inheritance. Powerful, but easily overused &mdash; for a small project, an <code>if</code>/<code>switch</code> is often clearer than a type hierarchy.</dd>
+
+    <dt id="g-seam">Seam</dt>
+    <dd>A place in the code where you can change behaviour without editing the code that uses it. <code>IWinCondition</code> is a seam &mdash; new win conditions slot in without touching <code>Interchained</code>. Adding seams <em>before</em> you need them is usually over-engineering; adding them <em>just as</em> a second case appears is sweet spot.</dd>
+
+    <dt class="group">Code smells (Fowler, <em>Refactoring</em> ch. 3)</dt>
+    <dd>A smell is a labelled heuristic &mdash; a hint that something <em>might</em> be worth a second look. It is never a hard rule. The bar for acting is: <em>does this actually hurt here, in this project?</em></dd>
+
+    <dt id="g-mysterious">Mysterious Name</dt>
+    <dd>A function, variable, or type whose name doesn't reveal what it does or holds. <span class="see">Fix: rename it. If no honest name comes, the design is murky &mdash; fix the design first.</span></dd>
+
+    <dt id="g-duplication">Duplicated Code</dt>
+    <dd>The same logic shape appears in more than one place. <span class="see">Fix: extract the shared shape into a named helper, then call it from both places.</span></dd>
+
+    <dt id="g-feature-envy">Feature Envy</dt>
+    <dd>A method that reaches into another object's data more than its own. <span class="see">Fix: move the method onto the object whose data it envies.</span></dd>
+
+    <dt id="g-data-clumps">Data Clumps</dt>
+    <dd>The same few fields or parameters keep travelling together across the codebase. <span class="see">Fix: bundle them into one type, pass that. The clump is a type waiting to be born.</span></dd>
+
+    <dt id="g-primitive">Primitive Obsession</dt>
+    <dd>A primitive (int, string) standing in for a domain concept that deserves its own type. <span class="see">Fix: give the concept a small type, or at minimum named constants for the sentinels.</span></dd>
+
+    <dt id="g-switches">Repeated Switches</dt>
+    <dd>The same <code>switch</code> or <code>if</code>-cascade on the same type appears in multiple places. <span class="see">Fix: replace with polymorphism (sometimes), or extract a shared helper that both sites call (often simpler).</span></dd>
+
+    <dt id="g-shotgun">Shotgun Surgery</dt>
+    <dd>One logical change forces scattered edits across many files. <span class="see">Fix: gather what changes together into one module.</span></dd>
+
+    <dt id="g-divergent">Divergent Change</dt>
+    <dd>The mirror image: one file or module is edited for several unrelated reasons. <span class="see">Fix: split so each module changes for one reason. (Interchained.cs suffers from this.)</span></dd>
+
+    <dt id="g-speculative">Speculative Generality</dt>
+    <dd>Abstraction, parameters, or hooks added for needs the spec doesn't have yet. <span class="see">Fix: delete it. Inline back until a real need shows. YAGNI.</span></dd>
+
+    <dt id="g-message-chains">Message Chains</dt>
+    <dd>Long <code>a.b().c().d()</code> navigation the caller shouldn't depend on. <span class="see">Fix: hide the walk behind one method on the first object.</span></dd>
+
+    <dt id="g-middle-man">Middle Man</dt>
+    <dd>A class or function that mostly just delegates onward, adding nothing. <span class="see">Fix: cut it; call the real target direct.</span></dd>
+
+    <dt id="g-refused-bequest">Refused Bequest</dt>
+    <dd>A subclass or implementer that ignores or overrides most of what it inherits. <span class="see">Fix: drop the inheritance, use composition instead.</span></dd>
+
+    <dt class="group">C# / .NET specifics</dt>
+
+    <dt id="g-ienumerable">IEnumerable / lazy evaluation</dt>
+    <dd>An interface for &ldquo;a sequence you can iterate&rdquo;. In C#, methods that <code>yield return</code> produce an <code>IEnumerable</code> lazily &mdash; values are computed only as the consumer reads them. The <code>Validator</code> query methods all use this: they don't allocate a list, they just promise to hand offending tiles back one at a time.</dd>
+
+    <dt id="g-hashset">HashSet&lt;T&gt;</dt>
+    <dd>A collection that cannot contain duplicates. Adding the same item twice is a no-op. Lookups, adds, and removes are O(1) on average. Used for <code>invalidTiles</code> precisely because a tile should either be in the set or not &mdash; never in twice.</dd>
+
+    <dt id="g-idempotent">Idempotent</dt>
+    <dd>An operation that can be repeated any number of times with the same result. <code>invalidTiles.Add(t)</code> on a <code>HashSet</code> is idempotent &mdash; add the same tile ten times, the set still contains it once. Useful property to design for.</dd>
+
+    <dt class="group">Workflow</dt>
+
+    <dt id="g-refactoring">Refactoring</dt>
+    <dd>Changing the structure of code without changing its behaviour. The aim is to make the next change easier. Done in small, behaviour-preserving steps, each one verifiable. Fowler's book of the same name is the canonical reference.</dd>
+
+    <dt id="g-yagni">YAGNI (You Aren't Gonna Need It)</dt>
+    <dd>An XP principle: don't build something because you <em>might</em> need it later. Build it when you actually need it. Closely allied with the <a href="#g-speculative">Speculative Generality</a> smell.</dd>
+
+  </dl>
+
+  <footer>
+    Companion to the Interchained gameplay loop. A self-review by the project, for the project &mdash; patterns and heuristics, not commandments. Cross-cutting concepts (Fowler's <em>Refactoring</em>, ch. 3) are summarised in the <a href="#glossary">glossary</a>.
+  </footer>
+
+</div>
+</body>
+</html>
