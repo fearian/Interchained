@@ -26,8 +26,8 @@ public class TileData : Node
     //Loop
     public LoopNode LoopNode { get; private set; }
     public bool IsMarkedForLoop { get; private set; } = false;
-    public TileData LoopIn = null;
-    public TileData LoopOut = null;
+    public TileData LoopIn { get; private set; }
+    public TileData LoopOut { get; private set; }
     public bool IsOnLoopIncorrectly { get; private set; } = false;
     
     //Pairs
@@ -119,6 +119,22 @@ public class TileData : Node
     public void ToggleIsLoop()
     {
         MarkForLoop(!IsMarkedForLoop);
+    }
+
+    public void SetLoopEndpoints(TileData loopIn, TileData loopOut)
+    {
+        LoopIn = loopIn;
+        LoopOut = loopOut;
+        onValueChanged.Invoke();
+        if (IsMarkedForLoop) onLoopChanged.Invoke();
+    }
+
+    public void ClearLoopEndpoints()
+    {
+        LoopIn = null;
+        LoopOut = null;
+        onValueChanged.Invoke();
+        if (IsMarkedForLoop) onLoopChanged.Invoke();
     }
 
     public void MarkAsInvalid(bool isInvalid = true)
