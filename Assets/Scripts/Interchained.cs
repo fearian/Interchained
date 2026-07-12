@@ -31,6 +31,7 @@ public class Interchained : MonoBehaviour
 
     public UnityEvent onLevelSaved;
     public UnityEvent onLevelLoaded;
+    public UnityEvent onPuzzleSolved;
 
     private HexGrid hexGrid;
 
@@ -43,6 +44,7 @@ public class Interchained : MonoBehaviour
         _validator = new Validator(hexGrid);
         _loopDrawer = _loopDrawer.Initialize(hexGrid, _validator);
         _longPressDetection.onLongPress.AddListener(LongPressReaction);
+        onPuzzleSolved.AddListener(() => GameManager.Instance.TriggerGameOver());
     }
 
     private void Update()
@@ -245,6 +247,8 @@ public class Interchained : MonoBehaviour
         //RefreshDirtyTileVisuals();
 
         RedrawLoop(tile);
+
+        CheckWin();
     }
 
     private void ReevaluateInvalidTiles()
@@ -622,12 +626,10 @@ public class Interchained : MonoBehaviour
         }
 
         RedrawLoop();
-        
-        if (IsSolved())
-        {
-            Debug.Log("U WON!!!");
-        }
-        else Debug.Log("NOT SOLVED");
+
+        bool solved = IsSolved();
+        Debug.Log(solved ? "U WON!!!" : "NOT SOLVED");
+        if (solved) onPuzzleSolved.Invoke();
     }
 
     private IEnumerator WaitForKeyPress(KeyCode key)
@@ -648,7 +650,25 @@ public class Interchained : MonoBehaviour
     public bool IsSolved()
     {
         if (invalidTiles.Count != 0) return false;
-        else return true;
+        return _loopDrawer.LoopIsSingleCycle();
+    }
+
+    public void CheckWin()
+    {
+        if (IsSolved()) onPuzzleSolved.Invoke();
+    }
+
+    public void ResetBoard()
+    {
+        foreach (TileData tile in hexGrid.GetGridArray())
+        {
+            if (tile == null) continue;
+            if (tile.IsLocked || tile.IsBlocker) continue;
+            tile.ClearTile();
+        }
+        invalidTiles.Clear();
+        ClearMsg();
+        _loopDrawer.ClearLoop();
     }
     
     #endregion

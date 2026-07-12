@@ -41,23 +41,31 @@ public class GameManager : MonoBehaviour
                 break;
             case GameState.GamePlaying:
                 GamePlayingTimer -= Time.deltaTime;
-                if (GamePlayingTimer < 0f)
-                {
-                    //state = GameState.GameOver;
-                    //OnStateChanged?.Invoke(this, EventArgs.Empty);
-                }
-
-                break;
-            case GameState.GameOver:
-                OnStateChanged?.Invoke(this, EventArgs.Empty);
                 break;
         }
-        
-        Debug.Log(state);
     }
 
     public bool IsGamePlaying()
     {
         return state == GameState.GamePlaying;
+    }
+
+    public bool IsGameOver()
+    {
+        return state == GameState.GameOver;
+    }
+
+    public void TriggerGameOver()
+    {
+        if (state == GameState.GameOver) return;
+        state = GameState.GameOver;
+        OnStateChanged?.Invoke(this, EventArgs.Empty);
+    }
+
+    public void ResetToPlaying()
+    {
+        GamePlayingTimer = 3600f;
+        state = GameState.GamePlaying;
+        OnStateChanged?.Invoke(this, EventArgs.Empty);
     }
 }

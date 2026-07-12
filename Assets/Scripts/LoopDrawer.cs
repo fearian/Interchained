@@ -188,6 +188,12 @@ public class LoopDrawer : MonoBehaviour
     {
         LineRenderer.positionCount = 0;
     }
+
+    public bool LoopIsSingleCycle()
+    {
+        if (sortingGraph == null) return false;
+        return sortingGraph.IsSingleCycle();
+    }
     
     private void OnDrawGizmos()
     {
