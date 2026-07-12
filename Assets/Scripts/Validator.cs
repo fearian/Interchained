@@ -167,7 +167,7 @@ public class Validator
         var neighbours = GearIsStuckOnGear(tile);
         var region = IsDuplicatedInRegion(tile);
 
-        return (neighbours.Count() != 0 || region.Count() != 0);
+        return (neighbours.Count() != 0 || region.Count() != 0 || InvalidGearLoopMeshing(tile));
     }
 
     public bool InvalidLoop(TileData tile)
@@ -175,5 +175,65 @@ public class Validator
         var touchingLoopTiles = IsTouchingLoopIncorrectly(tile);
         
         return (touchingLoopTiles.Count() != 0);
+    }
+
+    public int GetDirectionBetween(Hex from, Hex to)
+    {
+        Hex delta = to - from;
+        for (int i = 0; i < Hex.AXIAL_DIRECTIONS.Length; i++)
+        {
+            if (Hex.AXIAL_DIRECTIONS[i].q == delta.q && Hex.AXIAL_DIRECTIONS[i].r == delta.r) return i;
+        }
+        return -1;
+    }
+
+    public int GetLoopSide(TileData gear, TileData loopTile)
+    {
+        if (gear == null || loopTile == null) return 0;
+        if (!loopTile.IsMarkedForLoop || loopTile.IsInvalid) return 0;
+        if (loopTile.LoopIn == null) return 0;
+
+        int entryDir = GetDirectionBetween(loopTile.LoopIn.hex, loopTile.hex);
+        int gearDir = GetDirectionBetween(loopTile.hex, gear.hex);
+        if (entryDir < 0 || gearDir < 0) return 0;
+
+        int diff = (gearDir - entryDir + 6) % 6;
+        if (diff == 1 || diff == 2) return 1;
+        if (diff == 4 || diff == 5) return -1;
+        return 0;
+    }
+
+    public bool InvalidGearLoopMeshing(TileData gear)
+    {
+        if (gear == null || !gear.IsGear) return false;
+
+        int gearSide = GearLoopSide(gear);
+        if (gearSide == 0) return false;
+
+        foreach (Hex hex in _hexGrid.ValidHexes)
+        {
+            TileData other = _hexGrid.GetTile(hex);
+            if (other == null || !other.IsGear || other == gear) continue;
+
+            int otherSide = GearLoopSide(other);
+            if (otherSide == 0) continue;
+
+            if (otherSide == gearSide && other.Value != gear.Value) return true;
+            if (otherSide != gearSide && other.Value == gear.Value) return true;
+        }
+        return false;
+    }
+
+    private int GearLoopSide(TileData gear)
+    {
+        foreach (Hex nb in gear.hex.Neighbours())
+        {
+            if (!_hexGrid.ValidHexes.Contains(nb)) continue;
+            TileData loopTile = _hexGrid.GetTile(nb);
+            if (loopTile == null || !loopTile.IsMarkedForLoop) continue;
+            int side = GetLoopSide(gear, loopTile);
+            if (side != 0) return side;
+        }
+        return 0;
     }
 }

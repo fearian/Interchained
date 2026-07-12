@@ -248,7 +248,22 @@ public class Interchained : MonoBehaviour
 
         RedrawLoop(tile);
 
+        ValidateGearMeshing();
         CheckWin();
+    }
+
+    private void ValidateGearMeshing()
+    {
+        foreach (var hex in hexGrid.ValidHexes)
+        {
+            TileData tile = hexGrid.GetTile(hex);
+            if (tile == null || !tile.IsGear) continue;
+            if (_validator.InvalidGearLoopMeshing(tile) && !tile.IsInvalid)
+            {
+                tile.MarkAsInvalid(true);
+                invalidTiles.Add(tile);
+            }
+        }
     }
 
     private void ReevaluateInvalidTiles()
