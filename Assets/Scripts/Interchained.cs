@@ -311,31 +311,23 @@ public class Interchained : MonoBehaviour
         }
         else if (tile.IsNumber)
         {
-            // Validate By Sudoku
-            var axis = _validator.IsDuplicatedAlongAxis(tile);
-            var region = _validator.IsDuplicatedInRegion(tile);
-
-            var combined = axis.Union(region);
-            foreach (var invalidTile in combined)
-            {
-                invalidTile.MarkAsInvalid(true);
-                Debug.DrawLine(tile.hex.ToWorld(), invalidTile.hex.ToWorld(), Color.red, 1f);
-                invalidTiles.Add(invalidTile);
-            }
+            var combined = _validator.IsDuplicatedAlongAxis(tile).Union(_validator.IsDuplicatedInRegion(tile));
+            FlagOffendingTiles(tile, combined);
         }
         else if (tile.IsGear)
         {
-            // Validate by Adjacent
-            var neighbours = _validator.GearIsStuckOnGear(tile);
-            var region = _validator.IsDuplicatedInRegion(tile);
+            var combined = _validator.GearIsStuckOnGear(tile).Union(_validator.IsDuplicatedInRegion(tile));
+            FlagOffendingTiles(tile, combined);
+        }
+    }
 
-            var combined = neighbours.Union(region);
-            foreach (var invalidTile in combined)
-            {
-                invalidTile.MarkAsInvalid(true);
-                Debug.DrawLine(tile.hex.ToWorld(), invalidTile.hex.ToWorld(), Color.red, 1f);
-                invalidTiles.Add(invalidTile);
-            }
+    private void FlagOffendingTiles(TileData source, IEnumerable<TileData> offenders)
+    {
+        foreach (var invalidTile in offenders)
+        {
+            invalidTile.MarkAsInvalid(true);
+            Debug.DrawLine(source.hex.ToWorld(), invalidTile.hex.ToWorld(), Color.red, 1f);
+            invalidTiles.Add(invalidTile);
         }
     }
     
@@ -660,19 +652,7 @@ public class Interchained : MonoBehaviour
     public void LoadBoardState(string name = "")
     {
         Debug.Log($"Loading {name}");
-        BoardData1D<int> boardState = saveLoadHandler.LoadLevel(name);
-        if (boardState == null)
-        {
-            Debug.Log("BAD BOARD STATE ABOORT");
-            return;
-        }
-        ClearGameState();
-        hexGrid.SetBoard(boardState);
-        puzzleInfoField.text = "<b>" + boardState.Name + "</b>" + "\n" + boardState.Description;
-        
-        CheckBoard();
-        
-        onLevelLoaded.Invoke();
+        ApplyBoardState(saveLoadHandler.LoadLevel(name));
     }
 
     public void CopyClipboard()
@@ -682,7 +662,11 @@ public class Interchained : MonoBehaviour
 
     public void LoadClipboard()
     {
-        BoardData1D<int> boardState =saveLoadHandler.PasteFromClipboard();
+        ApplyBoardState(saveLoadHandler.PasteFromClipboard());
+    }
+
+    private void ApplyBoardState(BoardData1D<int> boardState)
+    {
         if (boardState == null)
         {
             Debug.Log("BAD BOARD STATE ABOORT");
@@ -693,7 +677,7 @@ public class Interchained : MonoBehaviour
         puzzleInfoField.text = "<b>" + boardState.Name + "</b>" + "\n" + boardState.Description;
 
         CheckBoard();
-        
+
         onLevelLoaded.Invoke();
     }
 
