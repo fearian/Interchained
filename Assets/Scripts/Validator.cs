@@ -139,7 +139,7 @@ public class Validator
         return i;
     }
 
-    public IEnumerable<TileData> FindInAdjacent(TileData tile, TileData[] targets)
+    public IEnumerable<TileData> AdjacentOf(TileData tile, TileData[] targets)
     {
         if (tile.region == 0) yield break;
         if (targets == null) yield break;

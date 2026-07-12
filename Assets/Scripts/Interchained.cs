@@ -41,7 +41,7 @@ public class Interchained : MonoBehaviour
     {
         hexGrid = new HexGrid(size, tileObject);
         _validator = new Validator(hexGrid);
-        _loopDrawer = _loopDrawer.Initialize(hexGrid);
+        _loopDrawer = _loopDrawer.Initialize(hexGrid, _validator);
         _longPressDetection.onLongPress.AddListener(LongPressReaction);
     }
 
@@ -251,28 +251,28 @@ public class Interchained : MonoBehaviour
     {
         if (invalidTiles.Count == 0) return;
         
-        List<TileData> PassesPlacementEval = new List<TileData>();
+        List<TileData> candidateTiles = new List<TileData>();
         
         // Placement Evaluation
         foreach (var tile in invalidTiles)
         {
             if (tile.IsEmpty)
             {
-                PassesPlacementEval.Add(tile);
+                candidateTiles.Add(tile);
             }
             
             if (tile.IsNumber)
             {
                 if (_validator.InvalidNumber(tile) == false)
                 {
-                    PassesPlacementEval.Add(tile);
+                    candidateTiles.Add(tile);
                 }
             }
             else if (tile.IsGear)
             {
                 if (_validator.InvalidGear(tile) == false)
                 {
-                    PassesPlacementEval.Add(tile);
+                    candidateTiles.Add(tile);
                 }
             }
             else if (tile.IsBlocker)
@@ -281,13 +281,13 @@ public class Interchained : MonoBehaviour
                 // ruleset. They should never enter invalidTiles via ValidatePlacement,
                 // but force-release them here as a guard so a future code path can't
                 // land one permanently stuck in the list.
-                PassesPlacementEval.Add(tile);
+                candidateTiles.Add(tile);
             }
             
         }
 
         // loop Evaluation
-        foreach (var passingTile in PassesPlacementEval)
+        foreach (var passingTile in candidateTiles)
         {
             // release any so-far valid tile not on loop
             if (passingTile.IsMarkedForLoop == false)
@@ -601,7 +601,7 @@ public class Interchained : MonoBehaviour
 
         if (validLoopTiles.Count <= 0) return;
 
-        _loopDrawer.SortLoopTiles(validLoopTiles.ToArray());
+        _loopDrawer.BuildLoopGraph(validLoopTiles.ToArray());
         
         //_loopDrawer.TryToDrawLoop(validLoopTiles.ToArray());
     }
