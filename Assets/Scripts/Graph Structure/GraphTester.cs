@@ -13,8 +13,52 @@ public class GraphTester : MonoBehaviour
 
     private void Start()
     {
+        RunHasCycleTests();
         LoadGraph(Tiles);
-        
+    }
+
+    private void RunHasCycleTests()
+    {
+        if (Tiles == null || Tiles.Length < 6)
+        {
+            Debug.LogWarning("MVP-006: HasCycle tests need at least 6 Tiles assigned in the inspector");
+            return;
+        }
+
+        LoopGraph openChain = BuildGraph(
+            new[] { Tiles[0], Tiles[1], Tiles[2], Tiles[3] },
+            new[,] { { 0, 1 }, { 1, 2 }, { 2, 3 } });
+        Debug.Assert(!openChain.HasCycle(), "MVP-006: open chain should have no cycle");
+
+        LoopGraph triangle = BuildGraph(
+            new[] { Tiles[0], Tiles[1], Tiles[2] },
+            new[,] { { 0, 1 }, { 1, 2 }, { 2, 0 } });
+        Debug.Assert(triangle.HasCycle(), "MVP-006: triangle should have a cycle");
+
+        LoopGraph twoCycles = BuildGraph(
+            new[] { Tiles[0], Tiles[1], Tiles[2], Tiles[3], Tiles[4], Tiles[5] },
+            new[,] { { 0, 1 }, { 1, 2 }, { 2, 0 }, { 3, 4 }, { 4, 5 }, { 5, 3 } });
+        Debug.Assert(twoCycles.HasCycle(), "MVP-006: two disjoint cycles should report a cycle");
+
+        LoopGraph tJunction = BuildGraph(
+            new[] { Tiles[0], Tiles[1], Tiles[2], Tiles[3] },
+            new[,] { { 0, 1 }, { 1, 2 }, { 1, 3 }, { 2, 3 } });
+        Debug.Assert(tJunction.HasCycle(), "MVP-006: T-junction containing a cycle should report a cycle");
+
+        Debug.Log("MVP-006 HasCycle tests passed");
+    }
+
+    private LoopGraph BuildGraph(TileData[] tiles, int[,] edges)
+    {
+        LoopGraph g = new LoopGraph();
+        LoopNode[] nodes = new LoopNode[tiles.Length];
+        for (int i = 0; i < tiles.Length; i++) nodes[i] = new LoopNode(tiles[i]);
+
+        for (int e = 0; e < edges.GetLength(0); e++)
+        {
+            g.AddNode(nodes[edges[e, 0]], new[] { nodes[edges[e, 1]] });
+        }
+        return g;
     }
 
     private void LoadGraph(TileData[] tiles)
