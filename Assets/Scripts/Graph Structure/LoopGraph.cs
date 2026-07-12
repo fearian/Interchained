@@ -38,6 +38,33 @@ public class LoopGraph
         }
     }
 
+    public LoopNode GetOrAddNode(TileData tile)
+    {
+        if (hexToNodeMap.TryGetValue(tile.hex, out LoopNode existing)) return existing;
+        LoopNode node = new LoopNode(tile);
+        Nodes.Add(node);
+        hexToNodeMap[tile.hex] = node;
+        return node;
+    }
+
+    public void LinkTiles(TileData a, TileData b)
+    {
+        LoopNode na = GetOrAddNode(a);
+        LoopNode nb = GetOrAddNode(b);
+        if (na == nb) return;
+        if (!HasLink(na, nb)) na.Links.Add(new Link(na, nb, false));
+        if (!HasLink(nb, na)) nb.Links.Add(new Link(nb, na, false));
+    }
+
+    private bool HasLink(LoopNode from, LoopNode to)
+    {
+        foreach (Link link in from.Links)
+        {
+            if (link.To == to) return true;
+        }
+        return false;
+    }
+
     public void RemoveNode(LoopNode node)
     {
         //TODO: Refactor this

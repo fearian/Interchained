@@ -43,17 +43,21 @@ public class LoopDrawer : MonoBehaviour
         possibleLoopTiles = null;
         if (TryCacheLoopTiles(loopTiles) == false) return;
         sortingGraph = new LoopGraph();
-        Debug.Log("Starting new sort graph sort! ooh!");
-        
-        //add tiles as nodes, with adjacent as links.
+
         foreach (var tile in loopTiles)
         {
+            sortingGraph.GetOrAddNode(tile);
             DebugExtension.DebugPoint(tile.hex.ToWorld() + new Vector3(0,1,0), Color.yellow, 0.1f);
-            TileData[] AdjacentLoops = FindAdjacentLoopTiles(tile);
-            if (AdjacentLoops == null) break;
-            LoopNode[] adjacentNodes = AdjacentLoops.Select(tile => new LoopNode(tile)).ToArray();
-            
-            sortingGraph.AddNode(new LoopNode(tile), adjacentNodes);
+        }
+
+        foreach (var tile in loopTiles)
+        {
+            TileData[] adjacents = FindAdjacentLoopTiles(tile);
+            if (adjacents == null) continue;
+            foreach (var adjacent in adjacents)
+            {
+                sortingGraph.LinkTiles(tile, adjacent);
+            }
         }
     }
     
