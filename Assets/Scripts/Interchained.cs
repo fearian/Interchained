@@ -599,11 +599,16 @@ public class Interchained : MonoBehaviour
             if (tile.IsMarkedForLoop && !tile.IsInvalid) validLoopTiles.Add(tile);
         }
 
-        if (validLoopTiles.Count <= 0) return;
-
         _loopDrawer.BuildLoopGraph(validLoopTiles.ToArray());
-        
-        //_loopDrawer.TryToDrawLoop(validLoopTiles.ToArray());
+
+        if (validLoopTiles.Count > 0)
+        {
+            _loopDrawer.TryToDrawLoop(validLoopTiles.ToArray());
+        }
+        else
+        {
+            _loopDrawer.ClearLoop();
+        }
     }
 
     #endregion

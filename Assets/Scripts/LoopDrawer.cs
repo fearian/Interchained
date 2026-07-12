@@ -61,82 +61,92 @@ public class LoopDrawer : MonoBehaviour
     {
         ClearLoop();
         if (TryCacheLoopTiles(loopTiles) == false) return;
-        if (loopTiles.Length < 2) return;
+        if (sortingGraph == null || sortingGraph.Count < 2) return;
 
         ClearMsg();
 
-        TileData currentTile = loopTiles[0];
-        TileData startingTile = loopTiles[0];
-        AddMsg(startingTile.hex, "Start!");
-
-        int step = 0;
-        while (step < loopTiles.Length)
+        LoopNode startNode = sortingGraph.Nodes[0];
+        foreach (var node in sortingGraph.Nodes)
         {
-            TileData[] AdjacentLoops = FindAdjacentLoopTiles(currentTile);
-
-            if (AdjacentLoops == null) break;
-
-            AssignInOutFromAdjacents(currentTile, AdjacentLoops);
-
-            void AssignInOutFromAdjacents(TileData tileData, TileData[] adjacentSteps)
-            {
-                if (tileData.LoopIn == null)
-                {
-                    if (adjacentSteps.Length >= 2)
-                        tileData.SetLoopEndpoints(adjacentSteps[0], adjacentSteps[1]);
-                    else
-                        tileData.SetLoopEndpoints(adjacentSteps[0], null);
-                }
-                else
-                {
-                    foreach (TileData adjacentLoopTile in adjacentSteps)
-                    {
-                        if (tileData.LoopIn == adjacentLoopTile) continue;
-                        else
-                        {
-                            tileData.SetLoopEndpoints(tileData.LoopIn, adjacentLoopTile);
-                            adjacentLoopTile.SetLoopEndpoints(tileData, adjacentLoopTile.LoopOut);
-                        }
-                    }
-                }
-            }
-
-            if (currentTile.LoopOut != null)
-            {
-                currentTile = currentTile.LoopOut;
-                step++;
-                AddMsg(currentTile.hex, $"step {step}", true);
-            }
-            else break;
+            if (NeighborsOf(node).Count == 1) { startNode = node; break; }
         }
 
-        if (step == loopTiles.Length - 1)
-        {
-            AddMsg(currentTile.hex, $"loop @ {step}", true);
-            if (currentTile.LoopOut == startingTile) DrawLoop(true);
-            else DrawLoop(false);
-        }
-        else return;
+        List<TileData> ordered = new List<TileData>();
+        HashSet<Hex> visited = new HashSet<Hex>();
+        LoopNode prev = null;
+        LoopNode current = startNode;
+        bool closed = false;
 
-        void DrawLoop(bool isClosed = false)
+        int guard = 0;
+        while (current != null && guard <= sortingGraph.Count + 1)
         {
-            Debug.Log($"Step@{step}, LoopTiles@{loopTiles.Length}, Drawing loop!");
-            int drawLength;
-            if (isClosed) drawLength = loopTiles.Length + 1;
-            else drawLength = loopTiles.Length;
-            LineRenderer.positionCount = drawLength;
+            guard++;
+            if (visited.Contains(current.Tile.hex))
+            {
+                if (current == startNode && prev != null)
+                {
+                    prev.Tile.SetLoopEndpoints(prev.Tile.LoopIn, startNode.Tile);
+                    startNode.Tile.SetLoopEndpoints(prev.Tile, startNode.Tile.LoopOut);
+                    closed = true;
+                }
+                break;
+            }
+
+            visited.Add(current.Tile.hex);
+            ordered.Add(current.Tile);
+
+            List<LoopNode> neighbours = NeighborsOf(current);
+            LoopNode next = null;
+            foreach (var nb in neighbours)
+            {
+                if (prev != null && nb.Tile.hex.Equals(prev.Tile.hex)) continue;
+                next = nb;
+                break;
+            }
+
+            TileData inTile = (prev != null) ? prev.Tile : null;
+            TileData outTile = (next != null) ? next.Tile : null;
+            current.Tile.SetLoopEndpoints(inTile, outTile);
+
+            if (next == null) break;
+
+            prev = current;
+            current = next;
+        }
+
+        DrawOrderedLoop(ordered, closed);
+    }
+
+    private List<LoopNode> NeighborsOf(LoopNode node)
+    {
+        List<LoopNode> result = new List<LoopNode>();
+        HashSet<Hex> seen = new HashSet<Hex>();
+        foreach (var link in node.Links)
+        {
+            if (link.To == null) continue;
+            if (seen.Add(link.To.Tile.hex)) result.Add(link.To);
+        }
+        return result;
+    }
+
+    private void DrawOrderedLoop(List<TileData> ordered, bool closed)
+    {
+        if (ordered.Count == 0) return;
+
+        int count = closed ? ordered.Count + 1 : ordered.Count;
+        LineRenderer.positionCount = count;
+        for (int i = 0; i < ordered.Count; i++)
+        {
+            LineRenderer.SetPosition(i, ordered[i].hex.ToWorld(0.125f));
+        }
+        if (closed)
+        {
+            LineRenderer.SetPosition(ordered.Count, ordered[0].hex.ToWorld(0.125f));
             LineRenderer.loop = true;
-            for (int i = 0; i < drawLength; i++)
-            {
-                LineRenderer.SetPosition(i, currentTile.hex.ToWorld(0.125f));
-                if (currentTile.LoopIn == null)
-                {
-                    LineRenderer.positionCount = i + 1;
-                    LineRenderer.loop = false;
-                    return;
-                }
-                else currentTile = currentTile.LoopIn;
-            }
+        }
+        else
+        {
+            LineRenderer.loop = false;
         }
     }
 
