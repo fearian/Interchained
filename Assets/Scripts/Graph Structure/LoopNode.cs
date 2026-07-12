@@ -9,7 +9,7 @@ public class LoopNode
     public List<Link> Links { get; private set; }
     public bool IsValid
     {
-        get { return (Links.Count <= 2 || Links.Count >= 1); }
+        get { return (Links.Count >= 1 && Links.Count <= 2); }
     }
 
     public LoopNode(TileData tile)

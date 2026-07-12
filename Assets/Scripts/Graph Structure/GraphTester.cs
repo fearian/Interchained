@@ -13,8 +13,32 @@ public class GraphTester : MonoBehaviour
 
     private void Start()
     {
+        RunIsValidTests();
         LoadGraph(Tiles);
         
+    }
+
+    private void RunIsValidTests()
+    {
+        var zero = new LoopNode(null);
+        Debug.Assert(!zero.IsValid, "MVP-001: 0-link node should be invalid");
+
+        var one = new LoopNode(null);
+        one.addLink(new LoopNode(null));
+        Debug.Assert(one.IsValid, "MVP-001: 1-link node should be valid");
+
+        var two = new LoopNode(null);
+        two.addLink(new LoopNode(null));
+        two.addLink(new LoopNode(null));
+        Debug.Assert(two.IsValid, "MVP-001: 2-link node should be valid");
+
+        var three = new LoopNode(null);
+        three.addLink(new LoopNode(null));
+        three.addLink(new LoopNode(null));
+        three.addLink(new LoopNode(null));
+        Debug.Assert(!three.IsValid, "MVP-001: 3-link node should be invalid");
+
+        Debug.Log("MVP-001 IsValid operator tests passed");
     }
 
     private void LoadGraph(TileData[] tiles)
