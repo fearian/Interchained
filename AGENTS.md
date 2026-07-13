@@ -181,3 +181,19 @@ Currently `IsSolved()` checks `invalidTiles.Count == 0`, which is necessary but 
 - Animated conveyor belt texture on loop LineRenderer
 - Particle effects on gear meshing
 - Sound design
+
+## Working Practices — autonomous milestone work (early/MVP)
+
+- **Remote & issues: prefer Gitea.** The issue tracker and primary remote is Gitea.
+  Default pushes and PRs there. Only use the GitHub mirror if explicitly confirmed;
+  if the remote intent is ambiguous, ask first.
+- **Branch off `ai-staging`, never `main`.** One PR per milestone.
+- **Review by branch-switching in the main repo** (`D:\git\Interchained`), not by
+  opening worktree projects in Unity — one project, one cache, fast reopens.
+- **No compiler available to the agent** (no committed `.csproj`). Review C# by
+  inspection and flag in each PR what needs editor verification (compile, rendering,
+  runtime behaviour).
+- **Don't hand-edit editor-authored files** (`.meta`, `.unity`, `.asset`, `.prefab`)
+  unless asked — Unity owns those; the agent writes `.cs` and lets Unity generate the
+  `.meta` on import.
+- **Never close PRs or merge without explicit instruction.**
