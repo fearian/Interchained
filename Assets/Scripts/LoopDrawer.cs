@@ -82,7 +82,10 @@ public class LoopDrawer : MonoBehaviour
             {
                 if (tileData.LoopIn == null)
                 {
-                    tileData.SetLoopEndpoints(adjacentSteps[0], adjacentSteps[1]);
+                    if (adjacentSteps.Length >= 2)
+                        tileData.SetLoopEndpoints(adjacentSteps[0], adjacentSteps[1]);
+                    else
+                        tileData.SetLoopEndpoints(adjacentSteps[0], null);
                 }
                 else
                 {
@@ -139,20 +142,32 @@ public class LoopDrawer : MonoBehaviour
 
     private TileData[] FindAdjacentLoopTiles(TileData tile)
     {
-        TileData[] AdjacentLoops = _validator.AdjacentOf(tile, possibleLoopTiles).ToArray();
-        
+        TileData[] AdjacentLoops = _validator.AdjacentOf(tile, possibleLoopTiles)
+            .OrderBy(t => DirectionIndex(tile.hex, t.hex))
+            .ToArray();
+
         if (AdjacentLoops.Count() < 1 || AdjacentLoops.Count() > 2)
         {
             return null;
         }
 
-        if (AdjacentLoops.Any(tile => tile == null))
+        if (AdjacentLoops.Any(t => t == null))
         {
             Debug.LogWarning("found 2 valid steps for the loop, but ended up as null in array?");
             return null;
         }
 
         return AdjacentLoops;
+    }
+
+    private int DirectionIndex(Hex from, Hex to)
+    {
+        Hex delta = to - from;
+        for (int i = 0; i < Hex.AXIAL_DIRECTIONS.Length; i++)
+        {
+            if (Hex.AXIAL_DIRECTIONS[i].q == delta.q && Hex.AXIAL_DIRECTIONS[i].r == delta.r) return i;
+        }
+        return -1;
     }
 
     public void ClearLoop()

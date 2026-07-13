@@ -114,21 +114,110 @@ public class LoopGraph
         else return false;
     }
 
+    public bool HasCycle()
+    {
+        if (Nodes.Count == 0) return false;
+
+        HashSet<LoopNode> visited = new HashSet<LoopNode>();
+        foreach (LoopNode start in Nodes)
+        {
+            if (visited.Contains(start)) continue;
+            if (CycleDFS(start, null, visited)) return true;
+        }
+        return false;
+    }
+
+    private bool CycleDFS(LoopNode node, LoopNode parent, HashSet<LoopNode> visited)
+    {
+        visited.Add(node);
+
+        foreach (LoopNode neighbour in DistinctNeighbors(node))
+        {
+            if (!visited.Contains(neighbour))
+            {
+                if (CycleDFS(neighbour, node, visited)) return true;
+            }
+            else if (neighbour != parent)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+
     public List<LoopNode> FindPathDFS(LoopNode start, LoopNode end)
     {
-        // ... Implementation of Depth-First Search
-        throw new NotImplementedException();
+        if (start == null || end == null) return null;
+
+        HashSet<LoopNode> visited = new HashSet<LoopNode>();
+        List<LoopNode> path = new List<LoopNode>();
+        if (DFSVisit(start, end, visited, path)) return path;
+        return null;
+    }
+
+    private bool DFSVisit(LoopNode current, LoopNode end, HashSet<LoopNode> visited, List<LoopNode> path)
+    {
+        visited.Add(current);
+        path.Add(current);
+
+        if (current == end) return true;
+
+        foreach (LoopNode neighbour in DistinctNeighbors(current))
+        {
+            if (visited.Contains(neighbour)) continue;
+            if (DFSVisit(neighbour, end, visited, path)) return true;
+        }
+
+        path.RemoveAt(path.Count - 1);
+        return false;
     }
 
     public List<LoopNode> FindPathBFS(LoopNode start, LoopNode end)
     {
-        // ... Implementation of Breadth-First Search
-        throw new NotImplementedException();
+        if (start == null || end == null) return null;
+
+        HashSet<LoopNode> visited = new HashSet<LoopNode>();
+        Dictionary<LoopNode, LoopNode> parent = new Dictionary<LoopNode, LoopNode>();
+        Queue<LoopNode> queue = new Queue<LoopNode>();
+
+        queue.Enqueue(start);
+        visited.Add(start);
+
+        while (queue.Count > 0)
+        {
+            LoopNode current = queue.Dequeue();
+            if (current == end) break;
+
+            foreach (LoopNode neighbour in DistinctNeighbors(current))
+            {
+                if (visited.Contains(neighbour)) continue;
+                visited.Add(neighbour);
+                parent[neighbour] = current;
+                queue.Enqueue(neighbour);
+            }
+        }
+
+        if (!visited.Contains(end)) return null;
+
+        List<LoopNode> path = new List<LoopNode>();
+        LoopNode node = end;
+        while (node != start)
+        {
+            path.Add(node);
+            node = parent[node];
+        }
+        path.Add(start);
+        path.Reverse();
+        return path;
     }
-    
-    public bool HasCycle()
+
+    private IEnumerable<LoopNode> DistinctNeighbors(LoopNode node)
     {
-        // ... Implementation of a cycle detection algorithm
-        throw new NotImplementedException();
+        HashSet<LoopNode> seen = new HashSet<LoopNode>();
+        foreach (Link link in node.Links)
+        {
+            if (link.To == null) continue;
+            if (seen.Add(link.To)) yield return link.To;
+        }
     }
 }
