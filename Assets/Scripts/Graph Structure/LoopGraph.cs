@@ -125,6 +125,50 @@ public class LoopGraph
     {
         return Nodes.All(node => node.IsValid); 
     }
+
+    public bool IsSingleCycle()
+    {
+        if (Nodes.Count < 3) return false;
+
+        foreach (LoopNode node in Nodes)
+        {
+            if (DistinctNeighborCount(node) != 2) return false;
+        }
+
+        return IsConnected();
+    }
+
+    public bool IsConnected()
+    {
+        if (Nodes.Count == 0) return true;
+
+        HashSet<LoopNode> visited = new HashSet<LoopNode>();
+        Stack<LoopNode> stack = new Stack<LoopNode>();
+        stack.Push(Nodes[0]);
+        visited.Add(Nodes[0]);
+
+        while (stack.Count > 0)
+        {
+            LoopNode current = stack.Pop();
+            foreach (LoopNode neighbour in DistinctNeighbors(current))
+            {
+                if (visited.Add(neighbour)) stack.Push(neighbour);
+            }
+        }
+
+        return visited.Count == Nodes.Count;
+    }
+
+    public int DistinctNeighborCount(LoopNode node)
+    {
+        HashSet<LoopNode> seen = new HashSet<LoopNode>();
+        foreach (Link link in node.Links)
+        {
+            if (link.To == null) continue;
+            seen.Add(link.To);
+        }
+        return seen.Count;
+    }
     
     private LoopNode FindNode(TileData tileData) 
     {
